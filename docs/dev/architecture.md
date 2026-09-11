@@ -1538,6 +1538,6 @@ gantt
   PR21_optional          :e5, after e4, 1
 ```
 
-本地 commit 里程碑（**不 push**，直至用户提供 GitHub URL）：Ship 0 末（PR-05）、dump 后（PR-07）、Ship 1a 末（PR-10）、1b（PR-13）、1c（PR-16）、1d（PR-20）。
+GitHub 里程碑（push `origin`）：Ship 0 末（PR-05）、dump 后（PR-07）、Ship 1a 末（PR-10）、1b（PR-13）、1c（PR-16）、1d（PR-20）。平时每个最小任务仍本地 commit。
 
 Merge 门禁：编译；新字段有 schema；用户可见行为在**本 PR** `docs/` 有一段；flags 默认不破坏拍照。
