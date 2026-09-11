@@ -52,7 +52,22 @@ CI：`.github/workflows/ci.yml` 在每次 push / PR 跑同一命令。
 
 ## 金测试
 
-见 `contracts/golden/README.md`。PR-03 实现 runner；PR-04 用 `set_zoom.json` 的 `send` 倒逼滑杆。
+见 `contracts/golden/README.md`。
+
+PR-03：`GoldenRunner` + `MockCameraEngine`（`engine.mock=true`）在 JVM 上跑全部 `golden/sequences/*.json` 与静物 fixtures。
+
+```powershell
+$env:JAVA_HOME = "D:\miniconda3\pkgs\openjdk-17.0.14-h5da7b33_0\Library"
+cd apps\android
+.\gradlew.bat testDebugUnitTest
+```
+
+- Fake clock：`MockCameraEngine.advanceNs` / `tickFrame`（30 fps = 33_333_333 ns）
+- Subset match：期望键必须存在且深等；实际可多键
+- `guideUser`：`s += (panNx, panNy) * stepPerFrame`
+- 切镜：滞回 2 帧后 `lens_switch`，下一帧起 `freeze_fade`
+
+PR-04 用 `set_zoom.json` 的 `send` 倒逼滑杆。
 
 静物 fixtures：`still_object_table`、`still_food`、`still_building`、`still_person`。无像素。
 

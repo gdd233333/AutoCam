@@ -19,6 +19,12 @@ cd apps\android
 
 产物：`apps/android/app/build/outputs/apk/debug/app-debug.apk`
 
+JVM 金测试（不需要设备）：
+
+```powershell
+.\gradlew.bat testDebugUnitTest
+```
+
 ## 本 PR 没有的东西
 
 - 相机权限与 Camera2 session（PR-07+）

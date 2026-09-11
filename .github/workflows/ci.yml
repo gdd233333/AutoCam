@@ -17,3 +17,19 @@ jobs:
         run: python -m pip install -r contracts/tools/requirements.txt
       - name: Validate contracts
         run: python contracts/tools/validate.py
+
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: JVM golden tests
+        working-directory: apps/android
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest --no-daemon
+

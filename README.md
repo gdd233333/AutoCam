@@ -20,6 +20,13 @@ python -m pip install -r contracts/tools/requirements.txt
 python contracts/tools/validate.py
 ```
 
+JVM 金测试（Mock，无真机）：
+
+```powershell
+cd apps\android
+.\gradlew.bat testDebugUnitTest
+```
+
 ```text
 contracts/          # PR-02 起冻结 JSON 契约
 apps/android/       # Ship 1：Compose + Camera2
