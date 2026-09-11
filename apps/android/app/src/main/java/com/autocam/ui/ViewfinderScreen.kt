@@ -42,6 +42,7 @@ fun ViewfinderScreen(
     engine: CameraEngine,
     bus: CommandBus,
     mock: Boolean,
+    aiGuide: String = "off",
     onCaptured: (StillResult) -> Unit,
     onOpenCalibration: () -> Unit,
     onOpenDebug: () -> Unit,
@@ -62,7 +63,7 @@ fun ViewfinderScreen(
                     previewMaxFps = 30,
                     previewMaxWidth = 1920,
                     sessionProfile = "still",
-                    aiGuide = "rule",
+                    aiGuide = aiGuide,
                 ),
             )
         }

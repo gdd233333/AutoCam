@@ -57,6 +57,7 @@ SDK 路径写在被 gitignore 的 `apps/android/local.properties`。可从 `loca
 | [docs/user/getting_started.md](docs/user/getting_started.md) | 使用说明（随功能 PR 补） |
 | [docs/dev/architecture.md](docs/dev/architecture.md) | 完整架构规格 |
 | [docs/dev/contracts.md](docs/dev/contracts.md) | CameraEngine 命令闭包 |
+| [docs/dev/flags.md](docs/dev/flags.md) | Feature flags 与 EventLog |
 | [docs/dev/building.md](docs/dev/building.md) | 构建与工具链 |
 | [docs/ml/README.md](docs/ml/README.md) | 训练与端侧推理 |
 

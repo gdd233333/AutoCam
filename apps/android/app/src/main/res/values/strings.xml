@@ -12,6 +12,7 @@
     <string name="calibration_title">Zoom cal</string>
     <string name="calibration_save">Save calibration</string>
     <string name="debug_title">Debug</string>
-    <string name="debug_flags_pending">Feature flags land in PR-05. Export zip / backend probe later.</string>
+    <string name="debug_cycle_guide">Cycle ai.guide</string>
+    <string name="debug_export">Export debug zip</string>
     <string name="back">Back</string>
 </resources>

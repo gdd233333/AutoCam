@@ -10,7 +10,7 @@
 4. **Shutter** 拍一张静物（Mock JPEG 元数据），进入确认页。
 5. 确认页可选 LUT chip（`warm` / `clean` / `vivid`）。点 Save 时，仅在选了 LUT 时 `applyCrop(bakeLut=true)`。Undo 丢弃。
 6. **Zoom cal** 可调切镜滞回、fade、增益和色温偏移，保存为 `ZoomBlendProfile`。
-7. **Debug** 目前只显示 mock 标志；功能开关在下一阶段（PR-05）。
+7. **Debug** 可开关全部 `flag.*`。`ai.guide` 是 `off | rule | neural`（点 Cycle 循环）。默认 `off`。`grade.lut` 打开后确认页才出现 LUT chip。Export debug zip 含 flags 与日志，默认不含 HAL dump。
 
 ## 构图叠加
 

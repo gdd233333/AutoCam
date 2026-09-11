@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 fun CaptureConfirmScreen(
     still: StillResult,
     bus: CommandBus,
+    gradeLut: Boolean = false,
     onDone: () -> Unit,
     onUndo: () -> Unit,
 ) {
@@ -45,7 +46,9 @@ fun CaptureConfirmScreen(
                 "(${still.cropBoxNorm.x1}, ${still.cropBoxNorm.y1})",
         )
         Text("rotationDeg=${still.rotationDeg}")
-        FilterChips(selected = lutId, onSelect = { lutId = it })
+        if (gradeLut) {
+            FilterChips(selected = lutId, onSelect = { lutId = it })
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
