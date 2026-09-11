@@ -11,7 +11,7 @@
 | 许可证 | Apache-2.0 |
 | 工作区 | `D:\AutoCam`（当前仅 `初始提示词.txt`；下文路径均为**将要创建**的目标，不是现存代码） |
 | 第一船硬件 | **已确认** Xiaomi 15S Pro（型号 `25042PN24C`，codename `dijun`，玄戒 O1 / HyperOS 2 / Android 15） |
-| Git | 仅本地；无 GitHub remote，在用户提供 URL 之前不 push |
+| Git | https://github.com/gdd233333/AutoCam （public）；大节点 push |
 | 受众 | 将按本文件落地实现的资深工程师 |
 
 架构决策见文末 **## Key Decisions**。可合并 PR 切分见文末 **## PR Plan**（最后一节）。
@@ -1283,7 +1283,7 @@ authority `com.autocam.app.fileprovider`。`StillResult.uri` 只用该 authority
 | Ship 1d | 训练 + 双产物 + 推理阶梯 | `ai.guide=neural` 可选 | 回 rule |
 | Ship 2/3 | iOS / NEXT README 之后再实现 | — | 独立 |
 
-minSdk 31，target/compile 35。第一真机 **Xiaomi 15S Pro**（已确认）。**当前无 GitHub remote：只本地 git。** 用户日后提供 URL 之前禁止 `git push`。
+minSdk 31，target/compile 35。第一真机 **Xiaomi 15S Pro**（已确认）。GitHub：https://github.com/gdd233333/AutoCam （public）。大节点 push。
 
 ---
 
@@ -1310,7 +1310,7 @@ minSdk 31，target/compile 35。第一真机 **Xiaomi 15S Pro**（已确认）�
 | # | 原问题 | 决定 |
 |---|--------|------|
 | 1 | 正式产品名 | **已确认：AutoCam**。显示名 AutoCam，包名 `com.autocam.app`（KD-12）。 |
-| 2 | GitHub remote | **已确认：暂无。** 仅本地 git；用户提供 URL 之前不 push。 |
+| 2 | GitHub remote | **已确认：** https://github.com/gdd233333/AutoCam （`gdd233333`，public）。 |
 | 3 | 第一硬件 | **已确认：Xiaomi 15S Pro / 玄戒 O1**（`25042PN24C` / `dijun`）。Pad 7 Ultra 为同 SoC 第二 profile。 |
 | 4 | 「鸿蒙」含义 | **已确认：Huawei HarmonyOS NEXT = Ship 3**（KD-9）。HyperOS/AOSP = Ship 1。 |
 | 5 | Ship 1 UI 工具包 | **已确认：Jetpack Compose**（KD-2）。Flutter 仅允许后期可选 shell。 |

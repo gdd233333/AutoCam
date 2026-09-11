@@ -7,6 +7,7 @@
 - 许可证：Apache-2.0
 - 第一船：Xiaomi 15S Pro（`25042PN24C` / `dijun` / 玄戒 O1 / HyperOS 2）
 - 架构规格：[docs/dev/architecture.md](docs/dev/architecture.md)
+- GitHub：https://github.com/gdd233333/AutoCam
 
 ## 现在能做什么
 
@@ -46,7 +47,7 @@ SDK 路径写在被 gitignore 的 `apps/android/local.properties`。可从 `loca
 
 ## Git
 
-Conventional Commits。每个最小任务一次 commit。当前**不设置 GitHub remote**。
+Conventional Commits。每个最小任务一次 commit。远程：`origin` → https://github.com/gdd233333/AutoCam （公开）。大节点再 push。
 
 ```
 feat(scope): ...
