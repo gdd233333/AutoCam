@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">AutoCam</string>
+    <string name="guide_move_subject_to_reticle">Move the subject onto the reticle</string>
+    <string name="permission_camera_denied">Camera permission is required for live capture.</string>
+    <string name="permission_camera_retry">Grant camera</string>
+    <string name="viewfinder_status">zoom %1$.2fx · %2$s · %3$s</string>
+    <string name="shutter">Shutter</string>
+    <string name="confirm_title">Confirm crop</string>
+    <string name="confirm_save">Save</string>
+    <string name="confirm_undo">Undo</string>
+    <string name="calibration_title">Zoom cal</string>
+    <string name="calibration_save">Save calibration</string>
+    <string name="debug_title">Debug</string>
+    <string name="debug_flags_pending">Feature flags land in PR-05. Export zip / backend probe later.</string>
+    <string name="back">Back</string>
 </resources>

@@ -92,13 +92,27 @@ class CommandBus(private val engine: CameraEngine) {
     }
 
     suspend fun setZoom(cmd: SetZoom, id: String? = null) {
-        dispatch(
-            buildJsonObject {
-                put("op", "setZoom")
-                put("id", id ?: (nextId++).toString())
-                put("body", EngineJson.encodeToJsonElement(cmd))
-            },
-        )
+        dispatch(envelope("setZoom", EngineJson.encodeToJsonElement(cmd), id))
+    }
+
+    suspend fun captureStill(id: String? = null): JsonElement? {
+        return dispatch(envelope("captureStill", body = null, id = id))
+    }
+
+    suspend fun applyCrop(cmd: ApplyCrop, id: String? = null): JsonElement? {
+        return dispatch(envelope("applyCrop", EngineJson.encodeToJsonElement(cmd), id))
+    }
+
+    suspend fun saveZoomCalibration(profile: ZoomBlendProfile, id: String? = null) {
+        dispatch(envelope("saveZoomCalibration", EngineJson.encodeToJsonElement(profile), id))
+    }
+
+    private fun envelope(op: String, body: JsonElement?, id: String?): JsonObject {
+        return buildJsonObject {
+            put("op", op)
+            put("id", id ?: (nextId++).toString())
+            if (body != null) put("body", body)
+        }
     }
 
     private fun requireBody(body: JsonElement?, op: String): JsonElement {

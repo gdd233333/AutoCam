@@ -70,10 +70,10 @@ class MockCameraEngine : CameraEngine {
     private val filterLog = mutableListOf<FilterRecommendation>()
     private val eventLog = mutableListOf<EngineEvent>()
 
-    private val frameFlow = MutableSharedFlow<ViewfinderFrame>(extraBufferCapacity = 256)
-    private val guideFlow = MutableSharedFlow<CompositionGuide>(extraBufferCapacity = 256)
-    private val filterFlow = MutableSharedFlow<FilterRecommendation>(extraBufferCapacity = 256)
-    private val eventFlow = MutableSharedFlow<EngineEvent>(extraBufferCapacity = 256)
+    private val frameFlow = MutableSharedFlow<ViewfinderFrame>(replay = 1, extraBufferCapacity = 256)
+    private val guideFlow = MutableSharedFlow<CompositionGuide>(replay = 1, extraBufferCapacity = 256)
+    private val filterFlow = MutableSharedFlow<FilterRecommendation>(replay = 1, extraBufferCapacity = 256)
+    private val eventFlow = MutableSharedFlow<EngineEvent>(replay = 1, extraBufferCapacity = 256)
 
     fun frameLog(): List<ViewfinderFrame> = frameLog.toList()
     fun guideLog(): List<CompositionGuide> = guideLog.toList()

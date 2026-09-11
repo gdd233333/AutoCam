@@ -67,7 +67,7 @@ cd apps\android
 - `guideUser`：`s += (panNx, panNy) * stepPerFrame`
 - 切镜：滞回 2 帧后 `lens_switch`，下一帧起 `freeze_fade`
 
-PR-04 用 `set_zoom.json` 的 `send` 倒逼滑杆。
+PR-04：Robolectric 拖动 `zoom_slider`，CommandBus 录到的信封必须与 `set_zoom.json` 的 `send` 字段级 subset 相等。Mock 模式跳过相机权限。
 
 静物 fixtures：`still_object_table`、`still_food`、`still_building`、`still_person`。无像素。
 

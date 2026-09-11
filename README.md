@@ -11,7 +11,7 @@
 
 ## 现在能做什么
 
-Ship 0：空 Gradle Compose 应用 + **已冻结的 CameraEngine JSON 契约**。还没有真相机、没有 Mock 引擎、没有模型。
+Ship 0：Mock 取景器（Compose）+ 已冻结的 CameraEngine 契约。还没有真相机、没有模型。`engine.mock=true` 时不需要相机权限。
 
 校验契约：
 
