@@ -1,0 +1,47 @@
+# Android / Gradle
+.gradle/
+**/build/
+local.properties
+*.iml
+.idea/
+.cxx/
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Native
+*.o
+*.so
+*.a
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+
+# ML weights and datasets (sha256 in manifests only)
+ml/datasets/raw/
+ml/teachers/**/*.npz
+*.tflite
+*.onnx
+*.mnn
+*.pt
+*.pth
+*.ckpt
+!ml/export/op_whitelist.yaml
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Secrets
+*.jks
+keystore.properties
