@@ -20,6 +20,14 @@ python -m pip install -r contracts/tools/requirements.txt
 python contracts/tools/validate.py
 ```
 
+C++ host 测试：
+
+```powershell
+cmake -S shared/core-cpp -B build/core-cpp -DAUTOCAM_BUILD_TESTS=ON -DAUTOCAM_BUILD_JNI=OFF
+cmake --build build/core-cpp
+ctest --test-dir build/core-cpp --output-on-failure
+```
+
 JVM 金测试（Mock，无真机）：
 
 ```powershell
@@ -32,7 +40,7 @@ contracts/          # PR-02 起冻结 JSON 契约
 apps/android/       # Ship 1：Compose + Camera2
 apps/ios/           # Ship 2 占位
 apps/harmony/       # HarmonyOS NEXT = Ship 3，不是 HyperOS
-shared/core-cpp/    # 变焦 / 裁切 / LUT / 推理
+shared/core-cpp/    # C++ 核心（PR-06 已接 CMake/JNI；算法后续 PR）
 ml/                 # 训练与导出
 docs/user|dev|ml/
 ```

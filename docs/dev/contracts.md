@@ -71,6 +71,8 @@ PR-04：Robolectric 拖动 `zoom_slider`，CommandBus 录到的信封必须与 `
 
 PR-05：`flag.ai.guide` 为枚举 `off|rule|neural`（默认 `off`）。`flag.engine.mock` 控制 PermissionGate。`EventLog` 写 `files/logs/autocam.log`。详见 [flags.md](flags.md)。
 
+PR-06：`shared/core-cpp` + JNI `libautocam`。烟测符号 `autocam::add`；变焦数学仍未实现。
+
 静物 fixtures：`still_object_table`、`still_food`、`still_building`、`still_person`。无像素。
 
 ## 禁止

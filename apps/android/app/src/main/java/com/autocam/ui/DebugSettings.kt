@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.autocam.app.R
+import com.autocam.core.NativeCore
 import com.autocam.flags.AiGuide
 import com.autocam.flags.FeatureFlags
 import com.autocam.observability.DebugBundle
@@ -43,6 +44,7 @@ fun DebugSettings(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(stringResource(R.string.debug_title))
+        Text("JNI add(2,3)=${NativeCore.tryAdd(2, 3) ?: "unloaded"}")
         FlagSwitch("engine.mock", snap.engineMock, "flag_engine_mock") {
             flags.setEngineMock(it)
         }

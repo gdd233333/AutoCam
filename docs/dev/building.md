@@ -25,8 +25,18 @@ JVM 金测试（不需要设备）：
 .\gradlew.bat testDebugUnitTest
 ```
 
-## 本 PR 没有的东西
+## Native（C++ / JNI）
 
-- 相机权限与 Camera2 session（PR-07+）
-- CMake / JNI（PR-06）
-- 契约 schema CI（PR-02）
+Host googletest（不需要 NDK）：
+
+```powershell
+cmake -S shared/core-cpp -B build/core-cpp -DAUTOCAM_BUILD_TESTS=ON -DAUTOCAM_BUILD_JNI=OFF
+cmake --build build/core-cpp
+ctest --test-dir build/core-cpp --output-on-failure
+```
+
+Android `libautocam.so` 随 `assembleDebug` 由 CMake 编出（需要 NDK + SDK CMake 3.22.1）。`NativeCore.tryAdd` 在 JVM 单测里必须返回 null。
+
+## 尚未接入
+
+- Camera2 session 与 HAL dump（PR-07+）

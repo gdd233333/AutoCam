@@ -9,6 +9,8 @@ android {
     namespace = "com.autocam.app"
     compileSdk = 34
 
+    ndkVersion = "26.3.11579264"
+
     defaultConfig {
         applicationId = "com.autocam.app"
         minSdk = 28
@@ -16,6 +18,15 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters += listOf("arm64-v8a", "x86_64")
+        }
+        externalNativeBuild {
+            cmake {
+                arguments += listOf("-DAUTOCAM_BUILD_JNI=ON", "-DAUTOCAM_BUILD_TESTS=OFF")
+                cppFlags += listOf("-std=c++20")
+            }
+        }
     }
 
     buildTypes {
@@ -51,6 +62,13 @@ android {
     testOptions {
         unitTests.isReturnDefaultValues = true
         unitTests.isIncludeAndroidResources = true
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = rootProject.file("../../shared/core-cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 }
 

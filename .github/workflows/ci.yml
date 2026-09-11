@@ -33,3 +33,13 @@ jobs:
           chmod +x gradlew
           ./gradlew testDebugUnitTest --no-daemon
 
+  native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Host googletest (autocam::add)
+        run: |
+          cmake -S shared/core-cpp -B build/core-cpp -DAUTOCAM_BUILD_TESTS=ON -DAUTOCAM_BUILD_JNI=OFF
+          cmake --build build/core-cpp
+          ctest --test-dir build/core-cpp --output-on-failure
+
