@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/VideoOptions.schema.json",
+  "title": "VideoOptions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["size", "fps", "audio", "stabilize"],
+  "properties": {
+    "size": { "$ref": "_defs.schema.json#/$defs/sizeWH" },
+    "fps": { "type": "integer", "minimum": 1, "maximum": 120 },
+    "audio": { "type": "boolean" },
+    "stabilize": { "type": "boolean" }
+  }
+}

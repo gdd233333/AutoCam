@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/DeviceProfile.schema.json",
+  "title": "DeviceProfile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["profileId", "match", "lenses", "zoomBlend", "inference"],
+  "properties": {
+    "profileId": { "type": "string", "minLength": 1 },
+    "match": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["manufacturer", "modelContains", "modelCodes", "productOrDevice"],
+      "properties": {
+        "manufacturer": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "modelContains": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "modelCodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "productOrDevice": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "osNote": { "type": "string" },
+    "hardwareNote": { "type": "string" },
+    "lenses": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lensId", "role", "equiv35mm", "opticalZoom", "hasOis", "hasAf", "bindBy"],
+        "properties": {
+          "lensId": { "$ref": "_defs.schema.json#/$defs/lensId" },
+          "role": { "$ref": "_defs.schema.json#/$defs/lensRole" },
+          "equiv35mm": { "type": "number", "exclusiveMinimum": 0 },
+          "opticalZoom": { "type": "number", "exclusiveMinimum": 0 },
+          "hasOis": { "type": "boolean" },
+          "hasAf": { "type": "boolean" },
+          "bindBy": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["equiv35mmTol"],
+            "properties": {
+              "equiv35mmTol": { "type": "number", "exclusiveMinimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "zoomBlend": { "$ref": "ZoomBlendProfile.schema.json" },
+    "inference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "preferredBackendOrder",
+        "vendorNpuSymbols",
+        "inputSide",
+        "runEveryNFrames"
+      ],
+      "properties": {
+        "preferredBackendOrder": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["litert_gpu", "mnn_vulkan", "cpu_int8"]
+          }
+        },
+        "vendorNpuSymbols": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "gpuName": { "type": "string" },
+        "inputSide": { "type": "integer", "const": 256 },
+        "runEveryNFrames": { "type": "integer", "minimum": 1, "maximum": 30 },
+        "viewfinderFp16": { "type": "string" },
+        "viewfinderInt8": { "type": "string" }
+      }
+    }
+  }
+}

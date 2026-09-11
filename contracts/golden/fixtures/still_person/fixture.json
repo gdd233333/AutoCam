@@ -1,0 +1,9 @@
+{
+  "id": "still_person",
+  "kind": "person_bias",
+  "notes": "Optional face bias only. v0 subject is still a saliency blob, not FaceDetector.",
+  "subjectBox": { "x0": 0.38, "y0": 0.2, "x1": 0.62, "y1": 0.78 },
+  "compositionClass": "thirds",
+  "suggestedTarget": { "nx": 0.333, "ny": 0.333 },
+  "suggestedZoom": 1.6
+}

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/ApplyCrop.schema.json",
+  "title": "ApplyCrop",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sourceUri", "cropBoxNorm", "rotationDeg", "bakeLut"],
+  "properties": {
+    "sourceUri": { "$ref": "_defs.schema.json#/$defs/fileProviderUri" },
+    "cropBoxNorm": { "$ref": "_defs.schema.json#/$defs/boxNorm" },
+    "rotationDeg": { "type": "number", "minimum": -15, "maximum": 15 },
+    "lutId": {
+      "oneOf": [
+        { "$ref": "_defs.schema.json#/$defs/lutId" },
+        { "type": "null" }
+      ]
+    },
+    "bakeLut": { "type": "boolean" }
+  }
+}

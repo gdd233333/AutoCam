@@ -1,0 +1,14 @@
+{
+  "timestampNs": 1,
+  "previewKind": "yuv420",
+  "previewHandle": "opaque:frame:42",
+  "width": 1920,
+  "height": 1080,
+  "rotationDeg": 90,
+  "zoomRatio": 0.7,
+  "activePhysicalCamera": null,
+  "activeLensId": "physical_uw",
+  "iso": 125,
+  "exposureNs": 10000000,
+  "focalMm": 2.2
+}

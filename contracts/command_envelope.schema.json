@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/command_envelope.schema.json",
+  "title": "CommandEnvelope alias",
+  "$ref": "schemas/CommandEnvelope.schema.json"
+}

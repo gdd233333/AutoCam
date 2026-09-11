@@ -1,0 +1,9 @@
+{
+  "id": "still_object_table",
+  "kind": "still_life",
+  "notes": "Object on a table. Mock geometry, not a HAL dump.",
+  "subjectBox": { "x0": 0.35, "y0": 0.3, "x1": 0.72, "y1": 0.78 },
+  "compositionClass": "thirds",
+  "suggestedTarget": { "nx": 0.333, "ny": 0.333 },
+  "suggestedZoom": 1.8
+}

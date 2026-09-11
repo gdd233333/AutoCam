@@ -1,0 +1,17 @@
+{
+  "aeMode": "on",
+  "afMode": "continuous_picture",
+  "awbMode": "auto",
+  "iso": null,
+  "exposureNs": null,
+  "focusDistance": null,
+  "wbCctK": null,
+  "evBias": 0.0,
+  "fps": 30,
+  "stabilization": "ois",
+  "zoomRatio": 1.0,
+  "physicalLensHint": null,
+  "stillSize": [4096, 3072],
+  "videoSize": [1920, 1080],
+  "jpegQuality": 95
+}

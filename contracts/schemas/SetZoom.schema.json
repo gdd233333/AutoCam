@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/SetZoom.schema.json",
+  "title": "SetZoom",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["zoomRatio", "rate", "source"],
+  "properties": {
+    "zoomRatio": { "$ref": "_defs.schema.json#/$defs/positiveNumber" },
+    "rate": { "$ref": "_defs.schema.json#/$defs/zoomRate" },
+    "source": { "$ref": "_defs.schema.json#/$defs/zoomSource" }
+  }
+}

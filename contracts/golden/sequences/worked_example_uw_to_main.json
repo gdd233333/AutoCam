@@ -1,0 +1,104 @@
+{
+  "name": "worked_example_uw_to_main",
+  "fakeClock": true,
+  "steps": [
+    {
+      "send": {
+        "op": "openSession",
+        "id": "1",
+        "body": {
+          "facing": "back",
+          "profileId": "xiaomi.15s_pro.hyperos2",
+          "previewMaxFps": 30,
+          "previewMaxWidth": 1920,
+          "sessionProfile": "still",
+          "aiGuide": "rule"
+        }
+      },
+      "expectSession": {
+        "zoomRatioRange": { "min": 0.61 },
+        "lenses": [
+          { "lensId": "physical_uw" },
+          { "lensId": "physical_main" },
+          { "lensId": "physical_tele" }
+        ]
+      }
+    },
+    {
+      "send": {
+        "op": "setZoom",
+        "id": "2",
+        "body": {
+          "zoomRatio": 0.7,
+          "rate": "immediate",
+          "source": "test"
+        }
+      },
+      "holdFrames": 2,
+      "nFrameWindow": 3,
+      "expectFrame": {
+        "zoomRatio": 0.7,
+        "activeLensId": "physical_uw"
+      },
+      "expectEvent": { "code": "lens_switch" }
+    },
+    {
+      "advanceNs": 66666666,
+      "expectEvent": { "code": "freeze_fade" }
+    },
+    {
+      "send": {
+        "op": "setZoom",
+        "id": "3",
+        "body": {
+          "zoomRatio": 1.2,
+          "rate": "immediate",
+          "source": "test"
+        }
+      },
+      "holdFrames": 2,
+      "nFrameWindow": 3,
+      "expectFrame": {
+        "zoomRatio": 1.2,
+        "activeLensId": "physical_main"
+      }
+    },
+    {
+      "send": { "op": "captureStill", "id": "4" },
+      "expectStill": {
+        "width": 4096,
+        "height": 3072,
+        "appliedLutId": null,
+        "activeLensId": "physical_main"
+      }
+    },
+    {
+      "send": {
+        "op": "applyCrop",
+        "id": "5",
+        "body": {
+          "sourceUri": "content://com.autocam.app.fileprovider/stills/20260911_001.jpg",
+          "cropBoxNorm": { "x0": 0.06, "y0": 0.04, "x1": 0.94, "y1": 0.9 },
+          "rotationDeg": -1.8,
+          "lutId": "lut.warm_v1",
+          "bakeLut": false
+        }
+      },
+      "expectStill": { "appliedLutId": null }
+    },
+    {
+      "send": {
+        "op": "applyCrop",
+        "id": "6",
+        "body": {
+          "sourceUri": "content://com.autocam.app.fileprovider/stills/20260911_001.jpg",
+          "cropBoxNorm": { "x0": 0.06, "y0": 0.04, "x1": 0.94, "y1": 0.9 },
+          "rotationDeg": -1.8,
+          "lutId": "lut.warm_v1",
+          "bakeLut": true
+        }
+      },
+      "expectStill": { "appliedLutId": "lut.warm_v1" }
+    }
+  ]
+}

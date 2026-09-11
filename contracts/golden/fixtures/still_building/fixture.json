@@ -1,0 +1,9 @@
+{
+  "id": "still_building",
+  "kind": "building",
+  "notes": "Facade with leading lines. Mock geometry, not a HAL dump.",
+  "subjectBox": { "x0": 0.28, "y0": 0.12, "x1": 0.74, "y1": 0.92 },
+  "compositionClass": "leading_line",
+  "suggestedTarget": { "nx": 0.333, "ny": 0.5 },
+  "suggestedZoom": 1.1
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/OpenSessionRequest.schema.json",
+  "title": "OpenSessionRequest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["facing", "sessionProfile", "aiGuide"],
+  "properties": {
+    "facing": { "$ref": "_defs.schema.json#/$defs/facing" },
+    "profileId": { "type": "string", "minLength": 1 },
+    "previewMaxFps": { "type": "integer", "minimum": 1, "maximum": 120 },
+    "previewMaxWidth": { "type": "integer", "minimum": 320 },
+    "sessionProfile": { "$ref": "_defs.schema.json#/$defs/sessionProfile" },
+    "aiGuide": { "$ref": "_defs.schema.json#/$defs/aiGuide" }
+  },
+  "unevaluatedProperties": false
+}

@@ -1,0 +1,31 @@
+{
+  "hysteresisFrames": 2,
+  "fadeFrames": 2,
+  "algorithm": "freeze_fade",
+  "breakpoints": [
+    {
+      "fromLensId": "physical_uw",
+      "toLensId": "physical_main",
+      "upSwitch": 0.95,
+      "downSwitch": 0.72,
+      "hideSwitchCropNorm": 0.02
+    },
+    {
+      "fromLensId": "physical_main",
+      "toLensId": "physical_tele",
+      "upSwitch": 4.8,
+      "downSwitch": 3.6,
+      "hideSwitchCropNorm": 0.03
+    }
+  ],
+  "gainMatch": {
+    "physical_uw": 1.0,
+    "physical_main": 1.0,
+    "physical_tele": 1.08
+  },
+  "cctOffsetK": {
+    "physical_uw": 0,
+    "physical_main": 0,
+    "physical_tele": -150
+  }
+}

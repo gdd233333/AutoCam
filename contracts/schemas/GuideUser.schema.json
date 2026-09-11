@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/GuideUser.schema.json",
+  "title": "GuideUser",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["panNx", "panNy", "zoomRatio", "followSuggested"],
+  "properties": {
+    "panNx": { "type": "number", "minimum": -1, "maximum": 1 },
+    "panNy": { "type": "number", "minimum": -1, "maximum": 1 },
+    "zoomRatio": { "$ref": "_defs.schema.json#/$defs/positiveNumber" },
+    "followSuggested": { "type": "boolean" }
+  }
+}

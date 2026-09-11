@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/CommandEnvelope.schema.json",
+  "title": "CommandEnvelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["op", "id"],
+  "properties": {
+    "op": { "$ref": "_defs.schema.json#/$defs/op" },
+    "id": { "type": "string", "minLength": 1 },
+    "body": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "op": { "const": "openSession" } }, "required": ["op"] },
+      "then": {
+        "required": ["body"],
+        "properties": { "body": { "$ref": "OpenSessionRequest.schema.json" } }
+      }
+    },
+    {
+      "if": { "properties": { "op": { "const": "closeSession" } }, "required": ["op"] },
+      "then": { "not": { "required": ["body"] } }
+    },
+    {
+      "if": { "properties": { "op": { "const": "setCaptureParams" } }, "required": ["op"] },
+      "then": {
+        "required": ["body"],
+        "properties": { "body": { "$ref": "CaptureParams.schema.json" } }
+      }
+    },
+    {
+      "if": { "properties": { "op": { "const": "setZoom" } }, "required": ["op"] },
+      "then": {
+        "required": ["body"],
+        "properties": { "body": { "$ref": "SetZoom.schema.json" } }
+      }
+    },
+    {
+      "if": { "properties": { "op": { "const": "setPhysicalLensHint" } }, "required": ["op"] },
+      "then": {
+        "required": ["body"],
+        "properties": { "body": { "$ref": "SetPhysicalLensHint.schema.json" } }
+      }
+    },
+    {
+      "if": { "properties": { "op": { "const": "guideUser" } }, "required": ["op"] },
+      "then": {
+        "required": ["body"],
+        "properties": { "body": { "$ref": "GuideUser.schema.json" } }
+      }
+    },
+    {
+      "if": { "properties": { "op": { "const": "captureStill" } }, "required": ["op"] },
+      "then": { "not": { "required": ["body"] } }
+    },
+    {
+      "if": { "properties": { "op": { "const": "startVideo" } }, "required": ["op"] },
+      "then": {
+        "required": ["body"],
+        "properties": { "body": { "$ref": "VideoOptions.schema.json" } }
+      }
+    },
+    {
+      "if": { "properties": { "op": { "const": "stopVideo" } }, "required": ["op"] },
+      "then": { "not": { "required": ["body"] } }
+    },
+    {
+      "if": { "properties": { "op": { "const": "applyCrop" } }, "required": ["op"] },
+      "then": {
+        "required": ["body"],
+        "properties": { "body": { "$ref": "ApplyCrop.schema.json" } }
+      }
+    },
+    {
+      "if": { "properties": { "op": { "const": "loadDeviceProfile" } }, "required": ["op"] },
+      "then": {
+        "required": ["body"],
+        "properties": { "body": { "$ref": "DeviceProfile.schema.json" } }
+      }
+    },
+    {
+      "if": { "properties": { "op": { "const": "saveZoomCalibration" } }, "required": ["op"] },
+      "then": {
+        "required": ["body"],
+        "properties": { "body": { "$ref": "ZoomBlendProfile.schema.json" } }
+      }
+    }
+  ]
+}

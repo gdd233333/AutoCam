@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/VideoClipResult.schema.json",
+  "title": "VideoClipResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["uri", "durationMs", "size"],
+  "properties": {
+    "uri": { "$ref": "_defs.schema.json#/$defs/fileProviderUri" },
+    "durationMs": { "type": "integer", "minimum": 0 },
+    "size": { "$ref": "_defs.schema.json#/$defs/sizeWH" }
+  }
+}

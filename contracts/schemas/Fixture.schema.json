@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/Fixture.schema.json",
+  "title": "Still-life golden fixture (no pixels)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "subjectBox", "compositionClass", "suggestedTarget"],
+  "properties": {
+    "id": { "type": "string", "minLength": 1 },
+    "kind": {
+      "type": "string",
+      "enum": ["still_life", "food", "building", "person_bias"]
+    },
+    "notes": { "type": "string" },
+    "subjectBox": { "$ref": "_defs.schema.json#/$defs/boxNorm" },
+    "compositionClass": { "$ref": "_defs.schema.json#/$defs/compositionClass" },
+    "suggestedTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["nx", "ny"],
+      "properties": {
+        "nx": { "$ref": "_defs.schema.json#/$defs/unit01" },
+        "ny": { "$ref": "_defs.schema.json#/$defs/unit01" }
+      }
+    },
+    "suggestedZoom": { "$ref": "_defs.schema.json#/$defs/positiveNumber" }
+  }
+}

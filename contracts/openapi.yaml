@@ -1,0 +1,72 @@
+openapi: 3.1.0
+info:
+  title: AutoCam CameraEngine
+  version: 0.2.0
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  description: |
+    In-process CommandBus contract. This is **not** an HTTP server.
+    Kotlin method name = envelope `op` = `contracts/schemas/<Op>.schema.json`.
+    Transport: `{ "op", "id", "body" }`. Results and streams are typed objects, not JSON-RPC.
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+paths:
+  /engine/{op}:
+    post:
+      operationId: dispatch
+      summary: Dispatch one CommandEnvelope
+      parameters:
+        - in: path
+          name: op
+          required: true
+          schema:
+            $ref: schemas/_defs.schema.json#/$defs/op
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: schemas/CommandEnvelope.schema.json
+      responses:
+        "200":
+          description: Typed result or empty (see op table in docs/dev/contracts.md)
+components:
+  schemas:
+    CommandEnvelope:
+      $ref: schemas/CommandEnvelope.schema.json
+    OpenSessionRequest:
+      $ref: schemas/OpenSessionRequest.schema.json
+    CameraSession:
+      $ref: schemas/CameraSession.schema.json
+    CaptureParams:
+      $ref: schemas/CaptureParams.schema.json
+    SetZoom:
+      $ref: schemas/SetZoom.schema.json
+    GuideUser:
+      $ref: schemas/GuideUser.schema.json
+    ViewfinderFrame:
+      $ref: schemas/ViewfinderFrame.schema.json
+    CompositionGuide:
+      $ref: schemas/CompositionGuide.schema.json
+    OverlayPrimitive:
+      $ref: schemas/OverlayPrimitive.schema.json
+    StillResult:
+      $ref: schemas/StillResult.schema.json
+    ApplyCrop:
+      $ref: schemas/ApplyCrop.schema.json
+    VideoOptions:
+      $ref: schemas/VideoOptions.schema.json
+    VideoSession:
+      $ref: schemas/VideoSession.schema.json
+    VideoClipResult:
+      $ref: schemas/VideoClipResult.schema.json
+    ZoomBlendProfile:
+      $ref: schemas/ZoomBlendProfile.schema.json
+    DeviceProfile:
+      $ref: schemas/DeviceProfile.schema.json
+    FilterRecommendation:
+      $ref: schemas/FilterRecommendation.schema.json
+    EngineEvent:
+      $ref: schemas/EngineEvent.schema.json
+    SetPhysicalLensHint:
+      $ref: schemas/SetPhysicalLensHint.schema.json

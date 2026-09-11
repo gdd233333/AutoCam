@@ -1,0 +1,7 @@
+{
+  "sourceUri": "content://com.autocam.app.fileprovider/stills/20260911_001.jpg",
+  "cropBoxNorm": { "x0": 0.06, "y0": 0.04, "x1": 0.94, "y1": 0.9 },
+  "rotationDeg": -1.8,
+  "lutId": "lut.warm_v1",
+  "bakeLut": false
+}

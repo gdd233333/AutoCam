@@ -1,0 +1,22 @@
+{
+  "timestampNs": 100000000,
+  "compositionClass": "thirds",
+  "confidence": 0.82,
+  "subjectBox": { "x0": 0.35, "y0": 0.3, "x1": 0.72, "y1": 0.78 },
+  "subjectCenterNx": 0.535,
+  "subjectCenterNy": 0.54,
+  "targetNx": 0.333,
+  "targetNy": 0.333,
+  "suggestedZoom": 1.8,
+  "overlay": [
+    { "type": "grid_thirds", "opacity": 0.35 },
+    {
+      "type": "subject_box",
+      "box": { "x0": 0.35, "y0": 0.3, "x1": 0.72, "y1": 0.78 }
+    },
+    { "type": "pan_arrow", "dx": -0.202, "dy": -0.207 },
+    { "type": "target_reticle", "nx": 0.333, "ny": 0.333 },
+    { "type": "horizon_line", "angleDeg": 0.4, "opacity": 0.2 },
+    { "type": "hint_text", "key": "guide.move_subject_to_reticle" }
+  ]
+}

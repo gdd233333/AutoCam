@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/CaptureParams.schema.json",
+  "title": "CaptureParams",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "aeMode",
+    "afMode",
+    "awbMode",
+    "evBias",
+    "fps",
+    "stabilization",
+    "zoomRatio",
+    "jpegQuality"
+  ],
+  "properties": {
+    "aeMode": { "$ref": "_defs.schema.json#/$defs/aeMode" },
+    "afMode": { "$ref": "_defs.schema.json#/$defs/afMode" },
+    "awbMode": { "$ref": "_defs.schema.json#/$defs/awbMode" },
+    "iso": { "type": ["integer", "null"], "minimum": 1 },
+    "exposureNs": { "type": ["integer", "null"], "minimum": 1 },
+    "focusDistance": { "type": ["number", "null"], "minimum": 0 },
+    "wbCctK": { "type": ["integer", "null"], "minimum": 1000, "maximum": 12000 },
+    "evBias": { "type": "number" },
+    "fps": { "type": "integer", "minimum": 1 },
+    "stabilization": { "$ref": "_defs.schema.json#/$defs/stabilization" },
+    "zoomRatio": { "$ref": "_defs.schema.json#/$defs/positiveNumber" },
+    "physicalLensHint": {
+      "oneOf": [
+        { "$ref": "_defs.schema.json#/$defs/lensId" },
+        { "type": "null" }
+      ]
+    },
+    "stillSize": { "$ref": "_defs.schema.json#/$defs/sizeWH" },
+    "videoSize": { "$ref": "_defs.schema.json#/$defs/sizeWH" },
+    "jpegQuality": { "type": "integer", "minimum": 1, "maximum": 100 }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "aeMode": { "not": { "const": "off" } } },
+        "required": ["aeMode"]
+      },
+      "then": {
+        "properties": {
+          "iso": { "type": "null" },
+          "exposureNs": { "type": "null" }
+        }
+      }
+    }
+  ]
+}

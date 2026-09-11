@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/EngineEvent.schema.json",
+  "title": "EngineEvent",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["timestampNs", "code", "level"],
+  "properties": {
+    "timestampNs": { "$ref": "_defs.schema.json#/$defs/ns" },
+    "code": { "$ref": "_defs.schema.json#/$defs/eventCode" },
+    "level": { "$ref": "_defs.schema.json#/$defs/eventLevel" },
+    "messageKey": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_.]*$"
+    },
+    "data": { "type": "object" }
+  }
+}

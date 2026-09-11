@@ -1,0 +1,9 @@
+{
+  "id": "still_food",
+  "kind": "food",
+  "notes": "Plate of food, fill-the-frame bias. Mock geometry, not a HAL dump.",
+  "subjectBox": { "x0": 0.18, "y0": 0.22, "x1": 0.84, "y1": 0.86 },
+  "compositionClass": "fill_frame",
+  "suggestedTarget": { "nx": 0.5, "ny": 0.5 },
+  "suggestedZoom": 1.35
+}

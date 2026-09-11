@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/CompositionGuide.schema.json",
+  "title": "CompositionGuide",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "timestampNs",
+    "compositionClass",
+    "confidence",
+    "subjectBox",
+    "subjectCenterNx",
+    "subjectCenterNy",
+    "targetNx",
+    "targetNy",
+    "suggestedZoom",
+    "overlay"
+  ],
+  "properties": {
+    "timestampNs": { "$ref": "_defs.schema.json#/$defs/ns" },
+    "compositionClass": { "$ref": "_defs.schema.json#/$defs/compositionClass" },
+    "confidence": { "$ref": "_defs.schema.json#/$defs/unit01" },
+    "subjectBox": { "$ref": "_defs.schema.json#/$defs/boxNorm" },
+    "subjectCenterNx": { "$ref": "_defs.schema.json#/$defs/unit01" },
+    "subjectCenterNy": { "$ref": "_defs.schema.json#/$defs/unit01" },
+    "targetNx": { "$ref": "_defs.schema.json#/$defs/unit01" },
+    "targetNy": { "$ref": "_defs.schema.json#/$defs/unit01" },
+    "suggestedZoom": { "$ref": "_defs.schema.json#/$defs/positiveNumber" },
+    "overlay": {
+      "type": "array",
+      "items": { "$ref": "OverlayPrimitive.schema.json" }
+    }
+  }
+}

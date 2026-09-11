@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/StillResult.schema.json",
+  "title": "StillResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "uri",
+    "width",
+    "height",
+    "appliedLutId",
+    "cropBoxNorm",
+    "rotationDeg",
+    "activeLensId",
+    "timestampNs"
+  ],
+  "properties": {
+    "uri": { "$ref": "_defs.schema.json#/$defs/fileProviderUri" },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "appliedLutId": {
+      "oneOf": [
+        { "$ref": "_defs.schema.json#/$defs/lutId" },
+        { "type": "null" }
+      ]
+    },
+    "cropBoxNorm": { "$ref": "_defs.schema.json#/$defs/boxNorm" },
+    "rotationDeg": { "type": "number", "minimum": -15, "maximum": 15 },
+    "activeLensId": { "$ref": "_defs.schema.json#/$defs/lensId" },
+    "timestampNs": { "$ref": "_defs.schema.json#/$defs/ns" }
+  }
+}

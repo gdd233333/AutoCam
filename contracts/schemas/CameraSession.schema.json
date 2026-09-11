@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/CameraSession.schema.json",
+  "title": "CameraSession",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "sessionId",
+    "logicalCameraId",
+    "facing",
+    "sessionProfile",
+    "zoomRatioRange",
+    "supportsLogicalMultiCamera",
+    "supportsControlZoomRatio",
+    "lenses",
+    "aeModes",
+    "afModes",
+    "awbModes",
+    "isoRange",
+    "exposureNsRange",
+    "fpsRanges",
+    "stillSizes",
+    "videoSizes",
+    "stabilization"
+  ],
+  "properties": {
+    "sessionId": { "type": "string", "minLength": 1 },
+    "logicalCameraId": { "type": "string", "minLength": 1 },
+    "facing": { "$ref": "_defs.schema.json#/$defs/facing" },
+    "sessionProfile": { "$ref": "_defs.schema.json#/$defs/sessionProfile" },
+    "zoomRatioRange": { "$ref": "_defs.schema.json#/$defs/rangeF" },
+    "supportsLogicalMultiCamera": { "type": "boolean" },
+    "supportsControlZoomRatio": { "type": "boolean" },
+    "lenses": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/sessionLens" }
+    },
+    "aeModes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "_defs.schema.json#/$defs/aeMode" }
+    },
+    "afModes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "_defs.schema.json#/$defs/afMode" }
+    },
+    "awbModes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "_defs.schema.json#/$defs/awbMode" }
+    },
+    "isoRange": { "$ref": "_defs.schema.json#/$defs/rangeF" },
+    "exposureNsRange": { "$ref": "_defs.schema.json#/$defs/rangeF" },
+    "fpsRanges": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "_defs.schema.json#/$defs/fpsRange" }
+    },
+    "stillSizes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "_defs.schema.json#/$defs/sizeWH" }
+    },
+    "videoSizes": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "_defs.schema.json#/$defs/sizeWH" }
+    },
+    "stabilization": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "_defs.schema.json#/$defs/stabilization" }
+    }
+  },
+  "$defs": {
+    "sessionLens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lensId",
+        "physicalCameraId",
+        "role",
+        "focalMm",
+        "equiv35mm",
+        "fNumber",
+        "opticalZoom",
+        "hasOis",
+        "hasAf"
+      ],
+      "properties": {
+        "lensId": { "$ref": "_defs.schema.json#/$defs/lensId" },
+        "physicalCameraId": { "type": ["string", "null"] },
+        "role": { "$ref": "_defs.schema.json#/$defs/lensRole" },
+        "focalMm": { "type": "number", "exclusiveMinimum": 0 },
+        "equiv35mm": { "type": "number", "exclusiveMinimum": 0 },
+        "fNumber": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "opticalZoom": { "type": "number", "exclusiveMinimum": 0 },
+        "hasOis": { "type": "boolean" },
+        "hasAf": { "type": "boolean" }
+      }
+    }
+  }
+}

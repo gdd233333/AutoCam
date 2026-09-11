@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/OverlayPrimitive.schema.json",
+  "title": "OverlayPrimitive",
+  "oneOf": [
+    { "$ref": "#/$defs/gridThirds" },
+    { "$ref": "#/$defs/subjectBox" },
+    { "$ref": "#/$defs/targetReticle" },
+    { "$ref": "#/$defs/panArrow" },
+    { "$ref": "#/$defs/hintText" },
+    { "$ref": "#/$defs/horizonLine" }
+  ],
+  "$defs": {
+    "gridThirds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "opacity"],
+      "properties": {
+        "type": { "const": "grid_thirds" },
+        "opacity": { "$ref": "_defs.schema.json#/$defs/unit01" }
+      }
+    },
+    "subjectBox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "box"],
+      "properties": {
+        "type": { "const": "subject_box" },
+        "box": { "$ref": "_defs.schema.json#/$defs/boxNorm" }
+      }
+    },
+    "targetReticle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "nx", "ny"],
+      "properties": {
+        "type": { "const": "target_reticle" },
+        "nx": { "$ref": "_defs.schema.json#/$defs/unit01" },
+        "ny": { "$ref": "_defs.schema.json#/$defs/unit01" }
+      }
+    },
+    "panArrow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "dx", "dy"],
+      "properties": {
+        "type": { "const": "pan_arrow" },
+        "dx": { "type": "number" },
+        "dy": { "type": "number" }
+      }
+    },
+    "hintText": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "key"],
+      "properties": {
+        "type": { "const": "hint_text" },
+        "key": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_.]*$",
+          "description": "strings.xml key only; no user-visible natural language"
+        }
+      }
+    },
+    "horizonLine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "angleDeg", "opacity"],
+      "properties": {
+        "type": { "const": "horizon_line" },
+        "angleDeg": { "type": "number" },
+        "opacity": { "$ref": "_defs.schema.json#/$defs/unit01" }
+      }
+    }
+  }
+}

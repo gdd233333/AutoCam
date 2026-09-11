@@ -1,0 +1,80 @@
+{
+  "profileId": "xiaomi.15s_pro.hyperos2",
+  "match": {
+    "manufacturer": ["Xiaomi"],
+    "modelContains": ["15S Pro"],
+    "modelCodes": ["25042PN24C"],
+    "productOrDevice": ["dijun"]
+  },
+  "osNote": "HyperOS 2 / Android 15. Not HarmonyOS NEXT.",
+  "hardwareNote": "Do not match Build.HARDWARE to 'Xring O1' until hal_dump fills it.",
+  "lenses": [
+    {
+      "lensId": "physical_uw",
+      "role": "ultrawide",
+      "equiv35mm": 14.0,
+      "opticalZoom": 0.61,
+      "hasOis": false,
+      "hasAf": true,
+      "bindBy": { "equiv35mmTol": 3.0 }
+    },
+    {
+      "lensId": "physical_main",
+      "role": "main",
+      "equiv35mm": 23.0,
+      "opticalZoom": 1.0,
+      "hasOis": true,
+      "hasAf": true,
+      "bindBy": { "equiv35mmTol": 3.0 }
+    },
+    {
+      "lensId": "physical_tele",
+      "role": "tele",
+      "equiv35mm": 120.0,
+      "opticalZoom": 5.22,
+      "hasOis": true,
+      "hasAf": true,
+      "bindBy": { "equiv35mmTol": 15.0 }
+    }
+  ],
+  "zoomBlend": {
+    "hysteresisFrames": 2,
+    "fadeFrames": 2,
+    "algorithm": "freeze_fade",
+    "breakpoints": [
+      {
+        "fromLensId": "physical_uw",
+        "toLensId": "physical_main",
+        "upSwitch": 0.95,
+        "downSwitch": 0.72,
+        "hideSwitchCropNorm": 0.02
+      },
+      {
+        "fromLensId": "physical_main",
+        "toLensId": "physical_tele",
+        "upSwitch": 4.8,
+        "downSwitch": 3.6,
+        "hideSwitchCropNorm": 0.03
+      }
+    ],
+    "gainMatch": {
+      "physical_uw": 1.0,
+      "physical_main": 1.0,
+      "physical_tele": 1.08
+    },
+    "cctOffsetK": {
+      "physical_uw": 0,
+      "physical_main": 0,
+      "physical_tele": -150
+    }
+  },
+  "inference": {
+    "preferredBackendOrder": ["litert_gpu", "mnn_vulkan", "cpu_int8"],
+    "vendorNpuSymbols": [],
+    "gpuName": "Immortalis-G925",
+    "inputSide": 256,
+    "runEveryNFrames": 3,
+    "viewfinderFp16": "models/guide_viewfinder_fp16.tflite",
+    "viewfinderInt8": "models/guide_viewfinder_int8.tflite"
+  }
+}

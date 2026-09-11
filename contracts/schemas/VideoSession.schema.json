@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/VideoSession.schema.json",
+  "title": "VideoSession",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["sessionId", "uriPending", "size", "fps"],
+  "properties": {
+    "sessionId": { "type": "string", "minLength": 1 },
+    "uriPending": { "$ref": "_defs.schema.json#/$defs/fileProviderUri" },
+    "size": { "$ref": "_defs.schema.json#/$defs/sizeWH" },
+    "fps": { "type": "integer", "minimum": 1 }
+  }
+}

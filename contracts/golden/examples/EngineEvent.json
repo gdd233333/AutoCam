@@ -1,0 +1,10 @@
+{
+  "timestampNs": 50000000,
+  "code": "lens_switch",
+  "level": "info",
+  "messageKey": "event.lens_switch",
+  "data": {
+    "fromLensId": "physical_uw",
+    "toLensId": "physical_main"
+  }
+}

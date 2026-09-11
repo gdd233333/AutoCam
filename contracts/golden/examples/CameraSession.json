@@ -1,0 +1,53 @@
+{
+  "sessionId": "sess_01",
+  "logicalCameraId": "0",
+  "facing": "back",
+  "sessionProfile": "still",
+  "zoomRatioRange": { "min": 0.61, "max": 10.0 },
+  "supportsLogicalMultiCamera": true,
+  "supportsControlZoomRatio": true,
+  "lenses": [
+    {
+      "lensId": "physical_uw",
+      "physicalCameraId": null,
+      "role": "ultrawide",
+      "focalMm": 2.2,
+      "equiv35mm": 14.0,
+      "fNumber": null,
+      "opticalZoom": 0.61,
+      "hasOis": false,
+      "hasAf": true
+    },
+    {
+      "lensId": "physical_main",
+      "physicalCameraId": null,
+      "role": "main",
+      "focalMm": 6.8,
+      "equiv35mm": 23.0,
+      "fNumber": null,
+      "opticalZoom": 1.0,
+      "hasOis": true,
+      "hasAf": true
+    },
+    {
+      "lensId": "physical_tele",
+      "physicalCameraId": null,
+      "role": "tele",
+      "focalMm": 15.5,
+      "equiv35mm": 120.0,
+      "fNumber": null,
+      "opticalZoom": 5.22,
+      "hasOis": true,
+      "hasAf": true
+    }
+  ],
+  "aeModes": ["off", "on", "on_auto_flash"],
+  "afModes": ["off", "auto", "continuous_picture", "continuous_video"],
+  "awbModes": ["off", "auto", "incandescent", "daylight", "cloudy"],
+  "isoRange": { "min": 50, "max": 6400 },
+  "exposureNsRange": { "min": 25000, "max": 1000000000 },
+  "fpsRanges": [[15, 15], [30, 30]],
+  "stillSizes": [[4096, 3072], [1920, 1440]],
+  "videoSizes": [[1920, 1080]],
+  "stabilization": ["off", "eis", "ois"]
+}

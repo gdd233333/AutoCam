@@ -1,0 +1,178 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/_defs.schema.json",
+  "title": "AutoCam shared JSON Schema definitions",
+  "$defs": {
+    "unit01": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "positiveNumber": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "boxNorm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x0", "y0", "x1", "y1"],
+      "properties": {
+        "x0": { "$ref": "#/$defs/unit01" },
+        "y0": { "$ref": "#/$defs/unit01" },
+        "x1": { "$ref": "#/$defs/unit01" },
+        "y1": { "$ref": "#/$defs/unit01" }
+      }
+    },
+    "rangeF": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min", "max"],
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" }
+      }
+    },
+    "sizeWH": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        { "type": "integer", "minimum": 1 },
+        { "type": "integer", "minimum": 1 }
+      ]
+    },
+    "fpsRange": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        { "type": "integer", "minimum": 1 },
+        { "type": "integer", "minimum": 1 }
+      ]
+    },
+    "lensId": {
+      "type": "string",
+      "pattern": "^physical_[a-z0-9_]+$"
+    },
+    "lutId": {
+      "type": "string",
+      "pattern": "^lut\\.[a-z0-9_]+$",
+      "not": { "pattern": "[Ll][Ee][Ii][Cc][Aa]" }
+    },
+    "compositionClass": {
+      "type": "string",
+      "enum": [
+        "thirds",
+        "center",
+        "diagonal",
+        "triangle",
+        "leading_line",
+        "symmetric",
+        "fill_frame",
+        "none"
+      ]
+    },
+    "sessionProfile": {
+      "type": "string",
+      "enum": ["still", "video", "degraded"]
+    },
+    "aiGuide": {
+      "type": "string",
+      "enum": ["off", "rule", "neural"]
+    },
+    "facing": {
+      "type": "string",
+      "enum": ["back", "front"]
+    },
+    "lensRole": {
+      "type": "string",
+      "enum": ["ultrawide", "main", "tele"]
+    },
+    "aeMode": {
+      "type": "string",
+      "enum": ["off", "on", "on_auto_flash"]
+    },
+    "afMode": {
+      "type": "string",
+      "enum": ["off", "auto", "continuous_picture", "continuous_video"]
+    },
+    "awbMode": {
+      "type": "string",
+      "enum": ["off", "auto", "incandescent", "daylight", "cloudy"]
+    },
+    "stabilization": {
+      "type": "string",
+      "enum": ["off", "eis", "ois"]
+    },
+    "fileProviderUri": {
+      "type": "string",
+      "pattern": "^content://com\\.autocam\\.app\\.fileprovider/"
+    },
+    "op": {
+      "type": "string",
+      "enum": [
+        "openSession",
+        "closeSession",
+        "setCaptureParams",
+        "setZoom",
+        "setPhysicalLensHint",
+        "guideUser",
+        "captureStill",
+        "startVideo",
+        "stopVideo",
+        "applyCrop",
+        "loadDeviceProfile",
+        "saveZoomCalibration"
+      ]
+    },
+    "eventCode": {
+      "type": "string",
+      "enum": [
+        "session_open",
+        "session_close",
+        "session_error",
+        "stream_profile",
+        "lens_switch",
+        "lens_hint_ignored",
+        "freeze_fade",
+        "inference_backend",
+        "inference_ms",
+        "inference_fallback",
+        "capture_ms",
+        "zoom_cmd_ms",
+        "zoom_apply_ms",
+        "params_rejected",
+        "permission_needed",
+        "hal_dump_saved",
+        "backend_probe_restored"
+      ]
+    },
+    "eventLevel": {
+      "type": "string",
+      "enum": ["debug", "info", "warn", "error"]
+    },
+    "overlayType": {
+      "type": "string",
+      "enum": [
+        "grid_thirds",
+        "subject_box",
+        "target_reticle",
+        "pan_arrow",
+        "hint_text",
+        "horizon_line"
+      ]
+    },
+    "zoomRate": {
+      "type": "string",
+      "enum": ["immediate", "smooth"]
+    },
+    "zoomSource": {
+      "type": "string",
+      "enum": ["user_slider", "test", "guide", "system"]
+    }
+  }
+}

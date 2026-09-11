@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/ViewfinderFrame.schema.json",
+  "title": "ViewfinderFrame",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "timestampNs",
+    "previewKind",
+    "previewHandle",
+    "width",
+    "height",
+    "rotationDeg",
+    "zoomRatio",
+    "activePhysicalCamera",
+    "activeLensId"
+  ],
+  "properties": {
+    "timestampNs": { "$ref": "_defs.schema.json#/$defs/ns" },
+    "previewKind": { "type": "string", "enum": ["yuv420", "private", "jpeg"] },
+    "previewHandle": { "type": "string", "minLength": 1 },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "rotationDeg": { "type": "integer", "enum": [0, 90, 180, 270] },
+    "zoomRatio": { "$ref": "_defs.schema.json#/$defs/positiveNumber" },
+    "activePhysicalCamera": { "type": ["string", "null"] },
+    "activeLensId": { "$ref": "_defs.schema.json#/$defs/lensId" },
+    "iso": { "type": ["integer", "null"], "minimum": 1 },
+    "exposureNs": { "type": ["integer", "null"], "minimum": 1 },
+    "focalMm": { "type": ["number", "null"], "exclusiveMinimum": 0 }
+  }
+}

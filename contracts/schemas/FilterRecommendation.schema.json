@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://autocam.dev/contracts/schemas/FilterRecommendation.schema.json",
+  "title": "FilterRecommendation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["timestampNs", "candidates"],
+  "properties": {
+    "timestampNs": { "$ref": "_defs.schema.json#/$defs/ns" },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lutId", "score", "tags"],
+        "properties": {
+          "lutId": { "$ref": "_defs.schema.json#/$defs/lutId" },
+          "score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    }
+  }
+}

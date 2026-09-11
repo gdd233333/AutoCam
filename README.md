@@ -11,7 +11,14 @@
 
 ## 现在能做什么
 
-Ship 0 刚开始。当前仓库是空 Gradle Compose 应用 + 目录骨架，**没有相机、没有模型**。
+Ship 0：空 Gradle Compose 应用 + **已冻结的 CameraEngine JSON 契约**。还没有真相机、没有 Mock 引擎、没有模型。
+
+校验契约：
+
+```powershell
+python -m pip install -r contracts/tools/requirements.txt
+python contracts/tools/validate.py
+```
 
 ```text
 contracts/          # PR-02 起冻结 JSON 契约
@@ -42,6 +49,7 @@ SDK 路径写在被 gitignore 的 `apps/android/local.properties`。可从 `loca
 |------|------|
 | [docs/user/getting_started.md](docs/user/getting_started.md) | 使用说明（随功能 PR 补） |
 | [docs/dev/architecture.md](docs/dev/architecture.md) | 完整架构规格 |
+| [docs/dev/contracts.md](docs/dev/contracts.md) | CameraEngine 命令闭包 |
 | [docs/dev/building.md](docs/dev/building.md) | 构建与工具链 |
 | [docs/ml/README.md](docs/ml/README.md) | 训练与端侧推理 |
 

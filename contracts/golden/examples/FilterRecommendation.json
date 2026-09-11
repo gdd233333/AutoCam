@@ -1,0 +1,20 @@
+{
+  "timestampNs": 200000000,
+  "candidates": [
+    {
+      "lutId": "lut.warm_v1",
+      "score": 0.71,
+      "tags": ["still_life", "indoor"]
+    },
+    {
+      "lutId": "lut.clean_v1",
+      "score": 0.54,
+      "tags": ["still_life"]
+    },
+    {
+      "lutId": "lut.vivid_v1",
+      "score": 0.33,
+      "tags": ["food"]
+    }
+  ]
+}

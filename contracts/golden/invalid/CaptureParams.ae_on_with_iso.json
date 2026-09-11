@@ -1,0 +1,12 @@
+{
+  "aeMode": "on",
+  "afMode": "continuous_picture",
+  "awbMode": "auto",
+  "iso": 200,
+  "exposureNs": 10000000,
+  "evBias": 0.0,
+  "fps": 30,
+  "stabilization": "ois",
+  "zoomRatio": 1.0,
+  "jpegQuality": 95
+}

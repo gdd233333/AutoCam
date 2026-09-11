@@ -1,0 +1,9 @@
+{
+  "op": "setZoom",
+  "id": "3",
+  "body": {
+    "zoomRatio": 2.0,
+    "rate": "immediate",
+    "source": "user_slider"
+  }
+}
