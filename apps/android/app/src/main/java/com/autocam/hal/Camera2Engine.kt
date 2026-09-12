@@ -7,6 +7,7 @@ import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CameraMetadata
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
@@ -41,10 +42,12 @@ import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withTimeoutOrNull
 
 class Camera2Engine(
     context: Context,
@@ -72,6 +75,8 @@ class Camera2Engine(
     private val yuvFrames = AtomicInteger(0)
     private val previewFrames = AtomicInteger(0)
     private var sessionSeq = 0
+    private var closedSignal: CompletableDeferred<Unit>? = null
+    private var hasStreamUseCase = false
 
     private val frameFlow = MutableSharedFlow<ViewfinderFrame>(replay = 1, extraBufferCapacity = 256)
     private val guideFlow = MutableSharedFlow<CompositionGuide>(replay = 1, extraBufferCapacity = 256)
@@ -116,6 +121,8 @@ class Camera2Engine(
             device = opened
             characteristics = ch
             previewSize = preview
+            hasStreamUseCase = ch.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
+                ?.contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE) == true
             requestBuilder = RepeatingRequestBuilder(ch, flags.halZoomRatio() && zoomRange != null)
             params = params.copy(zoomRatio = 1.0, stillSize = listOf(still.width, still.height))
             zoomRatio = 1f
@@ -138,12 +145,22 @@ class Camera2Engine(
     }
 
     override suspend fun closeSession() {
+        val toClose: CameraDevice?
         synchronized(lock) {
+            toClose = device
+            runCatching { captureSession?.stopRepeating() }
             runCatching { captureSession?.close() }
-            runCatching { device?.close() }
+            captureSession = null
+        }
+        if (toClose != null) {
+            val signal = CompletableDeferred<Unit>()
+            closedSignal = signal
+            handler.post { runCatching { toClose.close() } }
+            withTimeoutOrNull(2500) { signal.await() }
+        }
+        synchronized(lock) {
             runCatching { yuvReader?.close() }
             runCatching { jpegReader?.close() }
-            captureSession = null
             device = null
             yuvReader = null
             jpegReader = null
@@ -328,25 +345,60 @@ class Camera2Engine(
 
     private fun startSessionLocked(dev: CameraDevice) {
         val preview = previewSurface ?: return
-        val yuv = yuvReader ?: return
-        val jpeg = jpegReader ?: return
-        val outputs = listOf(
-            OutputConfiguration(preview),
-            OutputConfiguration(yuv.surface),
-            OutputConfiguration(jpeg.surface),
+        val yuv = yuvReader
+        val jpeg = jpegReader
+        val plans = listOfNotNull(
+            listOfNotNull(
+                output(preview, CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW),
+                yuv?.let { output(it.surface, CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW) },
+                jpeg?.let { output(it.surface, CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_STILL_CAPTURE) },
+            ),
+            listOfNotNull(
+                output(preview, CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW),
+                jpeg?.let { output(it.surface, CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_STILL_CAPTURE) },
+            ),
+            listOf(output(preview, CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW)),
         )
+        createSessionWithFallback(dev, plans, 0)
+    }
+
+    private fun output(surface: Surface, useCase: Int): OutputConfiguration {
+        val oc = OutputConfiguration(surface)
+        if (Build.VERSION.SDK_INT >= 33 && hasStreamUseCase) {
+            oc.streamUseCase = useCase.toLong()
+        }
+        return oc
+    }
+
+    private fun createSessionWithFallback(
+        dev: CameraDevice,
+        plans: List<List<OutputConfiguration>>,
+        index: Int,
+    ) {
+        if (index >= plans.size) {
+            emit("session_error", "error", "event.session_error")
+            return
+        }
+        val includeYuv = plans[index].size >= 3
         val config = SessionConfiguration(
             SessionConfiguration.SESSION_REGULAR,
-            outputs,
+            plans[index],
             executor,
             object : CameraCaptureSession.StateCallback() {
                 override fun onConfigured(session: CameraCaptureSession) {
-                    synchronized(lock) { captureSession = session }
+                    synchronized(lock) {
+                        captureSession = session
+                        if (!includeYuv) {
+                            runCatching { yuvReader?.close() }
+                            yuvReader = null
+                        }
+                    }
+                    emit("stream_profile", "info", "event.stream_profile")
                     updateRepeating()
                 }
 
                 override fun onConfigureFailed(session: CameraCaptureSession) {
-                    emit("session_error", "error", "event.session_error")
+                    createSessionWithFallback(dev, plans, index + 1)
                 }
             },
         )
@@ -441,6 +493,11 @@ class Camera2Engine(
                         if (cont.isActive) {
                             cont.resumeWithException(IllegalStateException("camera_error_$error"))
                         }
+                    }
+
+                    override fun onClosed(camera: CameraDevice) {
+                        closedSignal?.complete(Unit)
+                        closedSignal = null
                     }
                 },
                 handler,

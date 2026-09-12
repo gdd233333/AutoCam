@@ -37,6 +37,7 @@ import com.autocam.engine.OpenSessionRequest
 import com.autocam.engine.SetZoom
 import com.autocam.engine.StillResult
 import com.autocam.hal.Camera2Engine
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.decodeFromJsonElement
 
@@ -65,6 +66,7 @@ fun ViewfinderScreen(
 
     LaunchedEffect(engine, mock, aiGuide, cameraId) {
         runCatching { engine.closeSession() }
+        delay(150)
         val session = engine.openSession(
             OpenSessionRequest(
                 facing = if (cameraId == "1") "front" else "back",
