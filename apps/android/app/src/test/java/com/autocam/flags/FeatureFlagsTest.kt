@@ -22,6 +22,7 @@ class FeatureFlagsTest {
         assertFalse(snap.captureFullRes)
         assertFalse(snap.debugIncludeHalDump)
         assertFalse(snap.debugFlagSecure)
+        assertEquals("auto", snap.debugCameraId)
     }
 
     @Test

@@ -206,6 +206,10 @@ class Camera2Engine(
     override fun saveZoomCalibration(profile: ZoomBlendProfile) = Unit
 
     private fun pickCameraId(facing: String): String {
+        val override = flags.debugCameraId()
+        if (override.isNotBlank() && override != "auto") {
+            return override
+        }
         if (facing == "front") {
             return manager.cameraIdList.firstOrNull { id ->
                 manager.getCameraCharacteristics(id).get(CameraCharacteristics.LENS_FACING) ==

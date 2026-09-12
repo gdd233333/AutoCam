@@ -45,6 +45,7 @@ fun AutoCamRoot(
                     bus = bus,
                     mock = snapshot.engineMock,
                     aiGuide = snapshot.aiGuide,
+                    cameraId = snapshot.debugCameraId,
                     onCaptured = { route = Route.Confirm(it) },
                     onOpenCalibration = { route = Route.Calibration },
                     onOpenDebug = { route = Route.Debug },

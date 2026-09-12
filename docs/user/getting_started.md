@@ -24,4 +24,6 @@ Ship 1 走 Camera2，**没有**小米系统相机的 MFNR / Leica 成片管线�
 
 预览取景仍是下一阶段（PR-08）。当前默认 `engine.mock=true`。Debug 里关掉 `engine.mock` 后走 Camera2 Profile A 预览（需 CAMERA）。变焦滑杆改 `CONTROL_ZOOM_RATIO`，不重建 session。静物快门仍是 PR-09。
 
+逐个测镜头：Debug → Cycle cam：`auto` → `0` 主摄 → `2` 超广 → `3` 长焦 → `4` 三摄 logical → `1` 前置。取景器状态栏会显示 `id0` / `id2` 等。换完回到取景器会重新开 session。
+
 第一船设备：Xiaomi 15S Pro（玄戒 O1 / HyperOS）。

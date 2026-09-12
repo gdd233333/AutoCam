@@ -54,6 +54,18 @@ class FeatureFlags(
     fun debugFlagSecure(): Boolean = bool(Keys.DEBUG_FLAG_SECURE, defaultFlagSecure())
     fun setDebugFlagSecure(value: Boolean) = setBool(Keys.DEBUG_FLAG_SECURE, value)
 
+    fun debugCameraId(): String = store.getString(Keys.DEBUG_CAMERA_ID, "auto")
+    fun setDebugCameraId(value: String) {
+        store.putString(Keys.DEBUG_CAMERA_ID, value)
+        publish()
+    }
+
+    fun cycleDebugCameraId() {
+        val order = listOf("auto", "0", "2", "3", "4", "1")
+        val i = order.indexOf(debugCameraId()).let { if (it < 0) 0 else it }
+        setDebugCameraId(order[(i + 1) % order.size])
+    }
+
     fun readSnapshot(): FlagSnapshot {
         return FlagSnapshot(
             engineMock = engineMock(),
@@ -68,6 +80,7 @@ class FeatureFlags(
             captureFullRes = captureFullRes(),
             debugIncludeHalDump = debugIncludeHalDump(),
             debugFlagSecure = debugFlagSecure(),
+            debugCameraId = debugCameraId(),
         )
     }
 
@@ -100,6 +113,7 @@ class FeatureFlags(
         const val CAPTURE_FULL_RES = "flag.capture.full_res"
         const val DEBUG_INCLUDE_HAL_DUMP = "flag.debug.include_hal_dump"
         const val DEBUG_FLAG_SECURE = "flag.debug.flag_secure"
+        const val DEBUG_CAMERA_ID = "flag.debug.camera_id"
     }
 }
 
@@ -117,4 +131,5 @@ data class FlagSnapshot(
     val captureFullRes: Boolean,
     val debugIncludeHalDump: Boolean,
     val debugFlagSecure: Boolean,
+    val debugCameraId: String = "auto",
 )

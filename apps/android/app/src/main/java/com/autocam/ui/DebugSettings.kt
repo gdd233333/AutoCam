@@ -58,6 +58,19 @@ fun DebugSettings(
         FlagSwitch("engine.mock", snap.engineMock, "flag_engine_mock") {
             flags.setEngineMock(it)
         }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "camera.id=${snap.debugCameraId}  (${cameraIdHint(snap.debugCameraId)})",
+                modifier = Modifier.weight(1f),
+            )
+            Button(
+                onClick = { flags.cycleDebugCameraId() },
+                modifier = Modifier.testTag("flag_debug_camera_id"),
+            ) { Text("Cycle cam") }
+        }
         FlagSwitch("hal.multi_lens", snap.halMultiLens, "flag_hal_multi_lens") {
             flags.setHalMultiLens(it)
         }
@@ -126,6 +139,18 @@ fun DebugSettings(
         Button(onClick = onBack, modifier = Modifier.testTag("debug_back")) {
             Text(stringResource(R.string.back))
         }
+    }
+}
+
+@Composable
+private fun cameraIdHint(id: String): String {
+    return when (id) {
+        "0" -> "main 23mm"
+        "2" -> "UW 14mm"
+        "3" -> "tele 120mm"
+        "4" -> "logical 0+2+3"
+        "1" -> "front"
+        else -> "auto (0 or 4)"
     }
 }
 

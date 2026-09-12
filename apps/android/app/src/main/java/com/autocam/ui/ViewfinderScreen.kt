@@ -46,6 +46,7 @@ fun ViewfinderScreen(
     bus: CommandBus,
     mock: Boolean,
     aiGuide: String = "off",
+    cameraId: String = "auto",
     onCaptured: (StillResult) -> Unit,
     onOpenCalibration: () -> Unit,
     onOpenDebug: () -> Unit,
@@ -62,11 +63,11 @@ fun ViewfinderScreen(
         mutableStateOf(Camera2Engine.DEFAULT_PARAMS)
     }
 
-    LaunchedEffect(engine, mock, aiGuide) {
+    LaunchedEffect(engine, mock, aiGuide, cameraId) {
         runCatching { engine.closeSession() }
         val session = engine.openSession(
             OpenSessionRequest(
-                facing = "back",
+                facing = if (cameraId == "1") "front" else "back",
                 profileId = "xiaomi.15s_pro.hyperos2",
                 previewMaxFps = 30,
                 previewMaxWidth = 1920,
@@ -121,12 +122,13 @@ fun ViewfinderScreen(
         ) {
             val lens = frame?.activeLensId ?: "—"
             val iso = frame?.iso?.toString() ?: "—"
+            val cam = engine.currentSession()?.logicalCameraId ?: cameraId
             Text(
                 text = stringResource(
                     R.string.viewfinder_status,
                     zoom,
                     lens,
-                    if (mock) "mock" else "live iso$iso",
+                    if (mock) "mock" else "id$cam iso$iso",
                 ),
                 color = Color.White,
             )
