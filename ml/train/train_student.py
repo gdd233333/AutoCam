@@ -111,7 +111,11 @@ def train(args: argparse.Namespace) -> None:
     amp_device = "cuda" if device.type == "cuda" else "cpu"
     scaler = torch.amp.GradScaler(amp_device, enabled=use_amp)
     accum = max(1, args.accum)
-    history: list[float] = []
+    history: list[dict] = []
+    best_val = float("inf")
+    bad_epochs = 0
+    args.out.mkdir(parents=True, exist_ok=True)
+    print("hint: random 8-class CE≈2.08; keep the epoch with lowest val (healthy ~1.2–2.2). stop if val rises while train falls.")
     model.train()
     step = 0
     opt.zero_grad(set_to_none=True)
@@ -135,11 +139,13 @@ def train(args: argparse.Namespace) -> None:
                 step += 1
             losses.append(float(stats["loss"].detach().cpu()))
         mean = float(np.mean(losses)) if losses else 0.0
-        history.append(mean)
+        row: dict = {"epoch": epoch + 1, "train": mean}
         msg = f"epoch {epoch+1}/{args.epochs} loss={mean:.4f}"
         if val_loader is not None:
             model.eval()
             vlosses = []
+            n_ok = 0
+            n_all = 0
             with torch.no_grad():
                 for rgb, box, label, obj in val_loader:
                     rgb = rgb.to(device)
@@ -148,16 +154,37 @@ def train(args: argparse.Namespace) -> None:
                     obj = obj.to(device)
                     pred = model(rgb)
                     vlosses.append(float(viewfinder_loss(pred, box, label, obj, class_weight=class_weight)["loss"].cpu()))
+                    pred_c = pred["composition_logits"].argmax(dim=-1)
+                    n_ok += int((pred_c == label).sum().item())
+                    n_all += int(label.numel())
             model.train()
-            msg += f" val={float(np.mean(vlosses)):.4f}"
+            vmean = float(np.mean(vlosses))
+            vacc = n_ok / max(n_all, 1)
+            row["val"] = vmean
+            row["val_acc"] = vacc
+            msg += f" val={vmean:.4f} val_acc={vacc:.3f}"
+            if vmean + 1e-4 < best_val:
+                best_val = vmean
+                bad_epochs = 0
+                best_path = args.out / "viewfinder_best.pt"
+                torch.save({"model": model.state_dict(), "history": history + [row], "val": vmean}, best_path)
+                msg += "  [best]"
+            else:
+                bad_epochs += 1
+                msg += f"  (no improve {bad_epochs}/{args.patience})"
+        history.append(row)
         print(msg)
-    args.out.mkdir(parents=True, exist_ok=True)
+        (args.out / "history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
+        if val_loader is not None and args.patience > 0 and bad_epochs >= args.patience:
+            print(f"early stop: val not improving for {args.patience} epochs (best val={best_val:.4f})")
+            break
     ckpt = args.out / "viewfinder_last.pt"
     torch.save({"model": model.state_dict(), "history": history}, ckpt)
-    (args.out / "history.json").write_text(json.dumps(history), encoding="utf-8")
     print(f"wrote {ckpt}")
-    if args.expect_drop and len(history) >= 2 and history[-1] >= history[0]:
-        raise SystemExit(f"loss did not drop: {history[0]:.4f} -> {history[-1]:.4f}")
+    if best_val < float("inf"):
+        print(f"use {args.out / 'viewfinder_best.pt'}  (best val={best_val:.4f})")
+    if args.expect_drop and len(history) >= 2 and history[-1]["train"] >= history[0]["train"]:
+        raise SystemExit(f"loss did not drop: {history[0]['train']:.4f} -> {history[-1]['train']:.4f}")
 
 
 def main() -> None:
@@ -176,6 +203,7 @@ def main() -> None:
     p.add_argument("--cpu", action="store_true")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", type=Path, default=Path("ml/models/checkpoints"))
+    p.add_argument("--patience", type=int, default=5, help="early stop after this many worse val epochs; 0=off")
     p.add_argument("--expect-drop", action="store_true")
     args = p.parse_args()
     if args.no_amp:
