@@ -1,22 +1,18 @@
 package com.autocam.hal
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ZoomBlenderTest {
     @Test
-    fun hysteresisHoldsTwoTicksBeforeUwToMain() {
+    fun hysteresisOneTickSwitches() {
         val b = ZoomBlender()
         b.reset(ZoomBlender.LENS_UW)
         val first = b.tick(1.20)
-        assertFalse(first.switched)
-        assertEquals(ZoomBlender.LENS_UW, first.activeLensId)
-        val second = b.tick(1.20)
-        assertTrue(second.switched)
-        assertEquals(ZoomBlender.LENS_UW, second.fromLensId)
-        assertEquals(ZoomBlender.LENS_MAIN, second.activeLensId)
+        assertTrue(first.switched)
+        assertEquals(ZoomBlender.LENS_UW, first.fromLensId)
+        assertEquals(ZoomBlender.LENS_MAIN, first.activeLensId)
     }
 
     @Test
@@ -25,7 +21,17 @@ class ZoomBlenderTest {
         b.reset(ZoomBlender.LENS_MAIN)
         assertEquals(ZoomBlender.LENS_MAIN, b.desiredLens(0.80))
         assertEquals(ZoomBlender.LENS_UW, b.desiredLens(0.70))
-        assertEquals(ZoomBlender.LENS_TELE, b.desiredLens(5.00))
+        assertEquals(ZoomBlender.LENS_MAIN, b.desiredLens(5.00))
+        assertEquals(ZoomBlender.LENS_TELE, b.desiredLens(5.20))
+    }
+
+    @Test
+    fun teleReturnsToMainBeforeFovStalls() {
+        val b = ZoomBlender()
+        b.reset(ZoomBlender.LENS_TELE)
+        assertEquals(ZoomBlender.LENS_TELE, b.desiredLens(5.30, ZoomBlender.LENS_TELE))
+        assertEquals(ZoomBlender.LENS_MAIN, b.desiredLens(4.80, ZoomBlender.LENS_TELE))
+        assertEquals(ZoomBlender.LENS_MAIN, b.desiredLens(3.50, ZoomBlender.LENS_TELE))
     }
 
     @Test

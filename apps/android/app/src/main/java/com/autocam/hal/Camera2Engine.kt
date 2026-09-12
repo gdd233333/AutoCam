@@ -210,7 +210,7 @@ class Camera2Engine(
             sessionGen += 1
             toClose = device
             waitMs = when {
-                satMode -> 180
+                satMode -> 0
                 logicalCamera -> 3500
                 else -> 2500
             }
@@ -742,13 +742,13 @@ class Camera2Engine(
 
     private suspend fun openDevice(id: String): CameraDevice {
         var last: Throwable? = null
-        repeat(3) { attempt ->
+        repeat(12) { attempt ->
             try {
-                return withTimeout(1200) { openDeviceOnce(id) }
+                return withTimeout(400) { openDeviceOnce(id) }
             } catch (t: Throwable) {
                 last = t
                 Log.w(TAG, "open $id attempt ${attempt + 1} failed: ${t.message}")
-                delay(60L * (attempt + 1))
+                delay(20)
             }
         }
         throw last ?: IllegalStateException("open $id failed")

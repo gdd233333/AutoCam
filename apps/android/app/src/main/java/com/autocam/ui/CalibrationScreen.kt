@@ -30,12 +30,12 @@ fun CalibrationScreen(
     onBack: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    var hysteresis by remember { mutableFloatStateOf(2f) }
+    var hysteresis by remember { mutableFloatStateOf(1f) }
     var fade by remember { mutableFloatStateOf(2f) }
     var upSwitch by remember { mutableFloatStateOf(0.95f) }
     var downSwitch by remember { mutableFloatStateOf(0.72f) }
-    var teleUp by remember { mutableFloatStateOf(4.80f) }
-    var teleDown by remember { mutableFloatStateOf(3.60f) }
+    var teleUp by remember { mutableFloatStateOf(5.10f) }
+    var teleDown by remember { mutableFloatStateOf(4.95f) }
     var crop by remember { mutableFloatStateOf(0.02f) }
     var gainTele by remember { mutableFloatStateOf(1.08f) }
     var cctTele by remember { mutableFloatStateOf(-150f) }

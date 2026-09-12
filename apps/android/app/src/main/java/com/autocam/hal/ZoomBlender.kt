@@ -102,12 +102,12 @@ class ZoomBlender(
         const val LENS_TELE: String = "physical_tele"
 
         val DEFAULT: ZoomBlendProfile = ZoomBlendProfile(
-            hysteresisFrames = 2,
+            hysteresisFrames = 1,
             fadeFrames = 2,
             algorithm = "freeze_fade",
             breakpoints = listOf(
                 ZoomBlendBreakpoint(LENS_UW, LENS_MAIN, 0.95, 0.72, 0.02),
-                ZoomBlendBreakpoint(LENS_MAIN, LENS_TELE, 4.80, 3.60, 0.03),
+                ZoomBlendBreakpoint(LENS_MAIN, LENS_TELE, 5.10, 4.95, 0.03),
             ),
             gainMatch = mapOf(LENS_UW to 1.0, LENS_MAIN to 1.0, LENS_TELE to 1.08),
             cctOffsetK = mapOf(LENS_UW to 0, LENS_MAIN to 0, LENS_TELE to -150),
