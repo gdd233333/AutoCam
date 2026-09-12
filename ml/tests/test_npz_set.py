@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+import torch
 
 from ml.datasets.npz_set import NpzDataset
 
@@ -16,12 +17,6 @@ def test_sharded_uint8_roundtrip(tmp_path: Path):
     assert len(ds) == 4
     x, b, y, o = ds[3]
     assert x.shape == (3, 32, 32)
-    assert x.dtype == torch_dtype()
-    assert float(x.max()) <= 1.0
+    assert x.dtype == torch.uint8
+    assert int(x.max()) <= 255
     assert int(y) == 3
-
-
-def torch_dtype():
-    import torch
-
-    return torch.float32

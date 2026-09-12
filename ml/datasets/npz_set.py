@@ -35,6 +35,16 @@ class NpzDataset(Dataset):
     def __len__(self) -> int:
         return int(self.offsets[-1])
 
+    def labels(self) -> np.ndarray:
+        chunks = []
+        for f in self.files:
+            with np.load(f) as data:
+                if "label" in data.files:
+                    chunks.append(np.asarray(data["label"], dtype=np.int64))
+                else:
+                    chunks.append(np.argmax(np.asarray(data["logits"]), axis=-1).astype(np.int64))
+        return np.concatenate(chunks) if chunks else np.zeros((0,), dtype=np.int64)
+
     def _shard_index(self, i: int) -> tuple[int, int]:
         si = int(np.searchsorted(self.offsets, i, side="right") - 1)
         return si, i - int(self.offsets[si])
@@ -64,11 +74,10 @@ class NpzDataset(Dataset):
         rgb = np.asarray(shard["rgb"][j])
         if rgb.ndim == 3 and rgb.shape[-1] == 3:
             rgb = np.transpose(rgb, (2, 0, 1))
-        if rgb.dtype == np.uint8:
-            rgb = rgb.astype(np.float32) / 255.0
-        else:
-            rgb = rgb.astype(np.float32)
+        rgb = np.ascontiguousarray(rgb)
+        if rgb.dtype != np.uint8:
+            rgb = (np.clip(rgb, 0, 1) * 255.0).astype(np.uint8)
         box = torch.from_numpy(np.asarray(shard["box"][j], dtype=np.float32))
         label = torch.tensor(int(shard["label"][j]), dtype=torch.long)
         obj = torch.from_numpy(np.asarray(shard["obj"][j], dtype=np.float32).reshape(1))
-        return torch.from_numpy(np.ascontiguousarray(rgb)), box, label, obj
+        return torch.from_numpy(rgb), box, label, obj
