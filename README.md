@@ -11,7 +11,7 @@
 
 ## 现在能做什么
 
-Ship 0：Mock 取景器（Compose）+ 已冻结的 CameraEngine 契约。还没有真相机、没有模型。`engine.mock=true` 时不需要相机权限。
+Ship 0–1a 预览 + 软件 SAT 已在真机上。ML：MNv4-Conv-S 学生图、合成过拟合、随机权重导出白名单。权重不进 git。`engine.mock=true` 时不需要相机权限。
 
 校验契约：
 
@@ -33,6 +33,15 @@ JVM 金测试（Mock，无真机）：
 ```powershell
 cd apps\android
 .\gradlew.bat testDebugUnitTest
+```
+
+取景器学生（CPU 冒烟）：
+
+```powershell
+python -m pip install -r ml/requirements.txt
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+python -m pytest ml/tests -q
+python ml/train/overfit_synthetic.py --cpu --epochs 3
 ```
 
 ```text

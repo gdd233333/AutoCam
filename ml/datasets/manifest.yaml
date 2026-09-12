@@ -1,0 +1,21 @@
+# Do not download in PR-17. Place files under ml/datasets/raw/ when distilling.
+datasets:
+  picd:
+    name: PICD
+    note: Fold labels with fold_picd_to_8.py before training.
+    local: ml/datasets/raw/picd
+  cadb:
+    name: CADB
+    local: ml/datasets/raw/cadb
+  synthetic:
+    name: colored rectangle overfit
+    script: ml/datasets/synthetic.py
+teachers:
+  format: npz
+  keys:
+    rgb: "float32 NCHW [N,3,256,256] or NHWC [N,256,256,3] in 0-1"
+    box: "float32 [N,4] cx,cy,w,h relative to letterbox 256"
+    label: "int64 [N] 0-7 optional if logits present"
+    logits: "float32 [N,8] optional"
+    obj: "float32 [N,1] optional, default 1"
+  path: ml/teachers/viewfinder.npz

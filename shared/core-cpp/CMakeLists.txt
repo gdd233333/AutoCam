@@ -8,7 +8,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(AUTOCAM_BUILD_JNI "Build libautocam JNI shared library" OFF)
 option(AUTOCAM_BUILD_TESTS "Build googletest host tests" OFF)
 
-add_library(autocam_core STATIC src/add.cpp)
+add_library(autocam_core STATIC src/add.cpp src/inference.cpp)
 target_include_directories(autocam_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_target_properties(autocam_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 

@@ -1,7 +1,11 @@
 # ML
 
-取景器学生模型：冻结 **MobileNetV4-Conv-S + ReLU**。输出 box + obj + 8 类。几何只在 C++ `guide_from_box()`。
+取景器学生：**MobileNetV4-Conv-S + ReLU**，输出 box + obj + 8 类。几何只在 C++ `guide_from_box()`。
 
-训练设备按 RTX 5070 Ti Laptop **12 GB VRAM** 规划。权重不进 git，sha256 写在 `ml/models/README.md`。
+训练按 RTX 5070 Ti Laptop **12 GB** 规划。权重不进 git。步骤见 [docs/ml/training.md](../docs/ml/training.md)。
 
-PR-17 之前不要下载 PICD 等数据集。先让随机权重导出通过 op 白名单。
+```powershell
+python -m pytest ml/tests -q
+python ml/train/overfit_synthetic.py
+python ml/export/random_weight_export_ci.py
+```

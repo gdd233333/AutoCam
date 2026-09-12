@@ -2,7 +2,7 @@
 
 权重与 `.tflite` **不进 git**。发布时用 URL + sha256。
 
-计划文件名（PR-18 才生成）：
+计划文件名（本地 `python ml/export/to_tflite.py` 生成，不进 git）：
 
 | 文件 | 后端 | I/O |
 |------|------|-----|

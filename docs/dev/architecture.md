@@ -975,13 +975,13 @@ flowchart LR
 
 可选第三文件：still crop ranker（仅 PR-21，非取景器）。
 
-### 3. 尺寸表（规划，PR-17 用随机权重实测替换）
+### 3. 尺寸表（PR-17 学生图；文件体积以 `random_weight_export_ci.py` 打印为准）
 
-| 项 | 规划 |
+| 项 | 规划 / 实测 |
 |----|------|
-| MNv4-Conv-S | ~3.8M params，~0.26 GMAC @256 |
-| FP16 文件 | ~7.6 MB + 头 < 8.5 MB |
-| INT8 文件 | ~4 MB |
+| MNv4-Conv-S 骨干+取景器头 | **1.27M** params（无 ImageNet 1000 类 FC；完整分类模型才约 3.8M） |
+| FP16 文件 | 目标 < 12 MB |
+| INT8 文件 | 目标 < 8 MB |
 | 峰值激活（256，无 FPN） | ~8–15 MB |
 | GPU working set | 计入 40 MB 上限 |
 | 训练 VRAM | **按 12 GB 规划**（5070 Ti Laptop 典型），教师预推理离卡 |

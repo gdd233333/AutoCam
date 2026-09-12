@@ -37,6 +37,12 @@ ctest --test-dir build/core-cpp --output-on-failure
 
 Android `libautocam.so` 随 `assembleDebug` 由 CMake 编出（需要 NDK + SDK CMake 3.22.1）。`NativeCore.tryAdd` 在 JVM 单测里必须返回 null。
 
-## 尚未接入
+## ML（PR-17）
 
-- Camera2 session 与 HAL dump（PR-07+）
+```powershell
+python -m pip install -r ml/requirements.txt
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+python -m pytest ml/tests -q
+```
+
+GPU 训练见 `docs/ml/training.md`。

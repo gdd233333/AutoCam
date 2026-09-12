@@ -1,0 +1,5 @@
+# Training (RTX 5070 Ti): install torch from the CUDA wheel index first, then this file.
+numpy>=1.26
+pyyaml>=6.0
+onnx>=1.16
+pytest>=8.0

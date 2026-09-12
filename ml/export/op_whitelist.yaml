@@ -1,0 +1,29 @@
+# Frozen LiteRT GPU / XNNPACK opcode allow-list (architecture §构图 AI / 8)
+required:
+  - CONV_2D
+  - DEPTHWISE_CONV_2D
+  - FULLY_CONNECTED
+  - ADD
+  - MUL
+  - CONCATENATION
+  - PAD
+  - RESIZE_BILINEAR
+  - AVERAGE_POOL_2D
+  - MEAN
+  - SOFTMAX
+  - LOGISTIC
+  - RESHAPE
+  - TRANSPOSE
+  - RELU
+  - QUANTIZE
+  - DEQUANTIZE
+allowed_if_logged:
+  - STRIDED_SLICE
+  - MAXIMUM
+  - MINIMUM
+forbidden:
+  - PRELU
+  - Einsum
+  - NON_MAX_SUPPRESSION
+  - SCATTER
+  - CUSTOM
