@@ -1,7 +1,8 @@
 package com.autocam.ui
 
+import android.graphics.SurfaceTexture
+import android.view.Surface
 import android.view.TextureView
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +17,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -28,12 +30,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.autocam.app.R
 import com.autocam.engine.CameraEngine
+import com.autocam.engine.CaptureParams
 import com.autocam.engine.CommandBus
 import com.autocam.engine.EngineJson
 import com.autocam.engine.OpenSessionRequest
 import com.autocam.engine.SetZoom
 import com.autocam.engine.StillResult
-import com.autocam.mock.MockCameraEngine
+import com.autocam.hal.Camera2Engine
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.decodeFromJsonElement
 
@@ -48,38 +51,66 @@ fun ViewfinderScreen(
     onOpenDebug: () -> Unit,
 ) {
     val scope = rememberCoroutineScope()
-    val frame by engine.frames().collectAsState(initial = null)
-    val guide by engine.guides().collectAsState(initial = null)
+    val frameFlow = remember(engine, mock) { engine.frames() }
+    val guideFlow = remember(engine, mock) { engine.guides() }
+    val frame by frameFlow.collectAsState(initial = null)
+    val guide by guideFlow.collectAsState(initial = null)
     var zoom by remember { mutableFloatStateOf(1f) }
-    val zoomMin = 0.61f
-    val zoomMax = 10f
+    var zoomMin by remember { mutableFloatStateOf(1f) }
+    var zoomMax by remember { mutableFloatStateOf(10f) }
+    var params by remember {
+        mutableStateOf(Camera2Engine.DEFAULT_PARAMS)
+    }
 
-    LaunchedEffect(engine) {
-        if (engine is MockCameraEngine && engine.currentSession() == null) {
-            engine.openSession(
-                OpenSessionRequest(
-                    facing = "back",
-                    profileId = "xiaomi.15s_pro.hyperos2",
-                    previewMaxFps = 30,
-                    previewMaxWidth = 1920,
-                    sessionProfile = "still",
-                    aiGuide = aiGuide,
-                ),
-            )
-        }
+    LaunchedEffect(engine, mock, aiGuide) {
+        runCatching { engine.closeSession() }
+        val session = engine.openSession(
+            OpenSessionRequest(
+                facing = "back",
+                profileId = "xiaomi.15s_pro.hyperos2",
+                previewMaxFps = 30,
+                previewMaxWidth = 1920,
+                sessionProfile = "still",
+                aiGuide = aiGuide,
+            ),
+        )
+        zoomMin = session.zoomRatioRange.min.toFloat()
+        zoomMax = session.zoomRatioRange.max.toFloat()
+        zoom = zoom.coerceIn(zoomMin, zoomMax)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         AndroidView(
-            factory = { context -> TextureView(context) },
+            factory = { context ->
+                TextureView(context).apply {
+                    surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                        override fun onSurfaceTextureAvailable(
+                            surface: SurfaceTexture,
+                            width: Int,
+                            height: Int,
+                        ) {
+                            surface.setDefaultBufferSize(1920, 1080)
+                            engine.attachPreviewSurface(Surface(surface))
+                        }
+
+                        override fun onSurfaceTextureSizeChanged(
+                            surface: SurfaceTexture,
+                            width: Int,
+                            height: Int,
+                        ) = Unit
+
+                        override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+                            engine.attachPreviewSurface(null)
+                            return true
+                        }
+
+                        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) = Unit
+                    }
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .testTag(ViewfinderTags.PREVIEW),
-        )
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF101418)),
         )
         GuideOverlay(guide = guide, modifier = Modifier.fillMaxSize())
         Column(
@@ -89,12 +120,13 @@ fun ViewfinderScreen(
                 .padding(16.dp),
         ) {
             val lens = frame?.activeLensId ?: "—"
+            val iso = frame?.iso?.toString() ?: "—"
             Text(
                 text = stringResource(
                     R.string.viewfinder_status,
                     zoom,
                     lens,
-                    if (mock) "mock" else "live",
+                    if (mock) "mock" else "live iso$iso",
                 ),
                 color = Color.White,
             )
@@ -117,11 +149,18 @@ fun ViewfinderScreen(
                     .fillMaxWidth()
                     .testTag(ViewfinderTags.ZOOM_SLIDER),
             )
+            CaptureParamsBar(
+                params = params,
+                onChange = { next ->
+                    params = next.copy(zoomRatio = zoom.toDouble())
+                    scope.launch { bus.setCaptureParams(params) }
+                },
+            )
             Row {
                 Button(
                     onClick = {
                         scope.launch {
-                            val raw = bus.captureStill() ?: return@launch
+                            val raw = runCatching { bus.captureStill() }.getOrNull() ?: return@launch
                             onCaptured(EngineJson.decodeFromJsonElement(raw))
                         }
                     },

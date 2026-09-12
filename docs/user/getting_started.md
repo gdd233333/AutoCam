@@ -22,6 +22,6 @@ PR-07 起可在 Debug 页 **Dump HAL**（需 USB 调试 + CAMERA 权限）。dum
 
 Ship 1 走 Camera2，**没有**小米系统相机的 MFNR / Leica 成片管线，画质会低于 `com.android.camera`。
 
-预览取景仍是下一阶段（PR-08）。当前默认 `engine.mock=true`。
+预览取景仍是下一阶段（PR-08）。当前默认 `engine.mock=true`。Debug 里关掉 `engine.mock` 后走 Camera2 Profile A 预览（需 CAMERA）。变焦滑杆改 `CONTROL_ZOOM_RATIO`，不重建 session。静物快门仍是 PR-09。
 
 第一船设备：Xiaomi 15S Pro（玄戒 O1 / HyperOS）。

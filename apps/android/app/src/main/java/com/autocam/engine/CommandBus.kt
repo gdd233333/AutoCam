@@ -95,6 +95,10 @@ class CommandBus(private val engine: CameraEngine) {
         dispatch(envelope("setZoom", EngineJson.encodeToJsonElement(cmd), id))
     }
 
+    suspend fun setCaptureParams(params: CaptureParams, id: String? = null) {
+        dispatch(envelope("setCaptureParams", EngineJson.encodeToJsonElement(params), id))
+    }
+
     suspend fun captureStill(id: String? = null): JsonElement? {
         return dispatch(envelope("captureStill", body = null, id = id))
     }

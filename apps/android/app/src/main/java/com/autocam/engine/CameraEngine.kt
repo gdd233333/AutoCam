@@ -1,8 +1,11 @@
 package com.autocam.engine
 
+import android.view.Surface
 import kotlinx.coroutines.flow.Flow
 
 interface CameraEngine {
+    fun currentSession(): CameraSession? = null
+    fun attachPreviewSurface(surface: Surface?) {}
     suspend fun openSession(req: OpenSessionRequest): CameraSession
     suspend fun closeSession()
     fun setCaptureParams(params: CaptureParams)

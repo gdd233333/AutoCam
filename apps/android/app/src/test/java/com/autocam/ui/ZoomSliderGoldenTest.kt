@@ -54,6 +54,7 @@ class ZoomSliderGoldenTest {
                 )
             }
         }
+        composeRule.waitForIdle()
 
         composeRule.onNodeWithTag(ViewfinderTags.ZOOM_SLIDER)
             .performSemanticsAction(SemanticsActions.SetProgress) { setter ->

@@ -80,7 +80,7 @@ class MockCameraEngine : CameraEngine {
     fun filterLog(): List<FilterRecommendation> = filterLog.toList()
     fun eventLog(): List<EngineEvent> = eventLog.toList()
     fun subjectCenter(): Pair<Double, Double> = subjectNx to subjectNy
-    fun currentSession(): CameraSession? = session
+    override fun currentSession(): CameraSession? = session
 
     fun setSubject(nx: Double, ny: Double) {
         subjectNx = nx.coerceIn(0.0, 1.0)

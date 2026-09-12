@@ -75,6 +75,8 @@ PR-06：`shared/core-cpp` + JNI `libautocam`。烟测符号 `autocam::add`；变
 
 PR-07：真机 `hal_dump.json`。见 [hal_android.md](hal_android.md)。PR-08+ 只消费 dump。
 
+PR-08：Camera2 Profile A 预览 + CaptureParams。分析 YUV 只 acquire。变焦不重建 session。
+
 静物 fixtures：`still_object_table`、`still_food`、`still_building`、`still_person`。无像素。
 
 ## 禁止

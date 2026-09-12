@@ -5,7 +5,7 @@ import com.autocam.engine.CameraEngine
 import com.autocam.engine.CommandBus
 import com.autocam.flags.FeatureFlags
 import com.autocam.flags.PrefsFlagStore
-import com.autocam.mock.MockCameraEngine
+import com.autocam.hal.SwitchingCameraEngine
 import com.autocam.observability.DebugBundle
 import com.autocam.observability.EventLog
 import java.io.File
@@ -38,9 +38,9 @@ class AutoCamApp : Application() {
             debugBuild = BuildConfig.DEBUG,
         )
         eventLog = EventLog(File(filesDir, EventLog.RELATIVE_PATH))
-        val mock = MockCameraEngine()
-        engine = mock
-        bus = CommandBus(mock)
+        val switching = SwitchingCameraEngine(this, flags)
+        engine = switching
+        bus = CommandBus(switching)
         debugBundle = DebugBundle(filesDir, flags, eventLog)
         scope.launch {
             engine.events().collect { eventLog.append(it) }

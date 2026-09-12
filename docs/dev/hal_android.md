@@ -81,3 +81,19 @@ Session 组合（`CameraDevice.isSessionConfigurationSupported`，camera `0`）�
 `4` 的 `DUAL_PHYSICAL_YUV`（PRIV + physical 0 YUV + physical 2 YUV）**supported=true**。
 
 PR-08 建议：优先尝试隐藏 logical **`4`**（三颗物理镜头），失败再退回公开 `0` + `CONTROL_ZOOM_RATIO`。直接开 `2`/`3` 可单独用 UW/Tele。
+
+## PR-08 Profile A 预览（dump 真值）
+
+默认 `engine.mock=true`。Debug 关掉 mock 后走 Camera2。
+
+| 项 | 值 |
+|----|----|
+| 默认 cameraId | 公开 **`0`** |
+| `hal.multi_lens=true` | 隐藏 logical **`4`**（physical 0/2/3） |
+| Preview PRIVATE | 1920×1080 |
+| Analysis YUV_420_888 | 1920×1080，只 `acquireLatestImage().close()`，不推理 |
+| JPEG（session 占位，拍照 PR-09） | 4080×3072 量级 |
+| 变焦 | `CONTROL_ZOOM_RATIO` **1.0–10.0**，不重建 session |
+| Repeating | `TEMPLATE_PREVIEW` 30 fps |
+
+TextureView 出预览。参数条：AE / AF / AWB / EV，AE off 时 ISO。
