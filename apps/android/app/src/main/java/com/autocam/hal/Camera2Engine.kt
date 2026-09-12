@@ -17,6 +17,7 @@ import android.media.ImageReader
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Log
 import android.util.Size
 import android.view.Surface
 import com.autocam.engine.ApplyCrop
@@ -55,7 +56,12 @@ class Camera2Engine(
 ) : CameraEngine {
     private val appContext = context.applicationContext
     private val manager = appContext.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-    private val cameraThread = HandlerThread("autocam-camera2").also { it.start() }
+    private val cameraThread = HandlerThread("autocam-camera2").also { thread ->
+        thread.setUncaughtExceptionHandler { _, t ->
+            Log.e(TAG, "camera thread crashed", t)
+        }
+        thread.start()
+    }
     private val handler = Handler(cameraThread.looper)
     private val executor = Executor { handler.post(it) }
 
@@ -75,8 +81,10 @@ class Camera2Engine(
     private val yuvFrames = AtomicInteger(0)
     private val previewFrames = AtomicInteger(0)
     private var sessionSeq = 0
+    private var sessionGen = 0
     private var closedSignal: CompletableDeferred<Unit>? = null
     private var hasStreamUseCase = false
+    private var logicalCamera = false
 
     private val frameFlow = MutableSharedFlow<ViewfinderFrame>(replay = 1, extraBufferCapacity = 256)
     private val guideFlow = MutableSharedFlow<CompositionGuide>(replay = 1, extraBufferCapacity = 256)
@@ -110,30 +118,44 @@ class Camera2Engine(
         val still = StreamSizePicker.nearestPixels(jpeg, 12_500_000, 4.0 / 3.0)
             ?: StreamSizePicker.closest(jpeg, 4080, 3072)
             ?: Size(1920, 1440)
-        val zoomRange = if (Build.VERSION.SDK_INT >= 30) {
-            ch.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE)
-        } else {
-            null
-        }
+        val logical = Build.VERSION.SDK_INT >= 28 && ch.physicalCameraIds.size >= 2
+        val zoomRange = ZoomRange.publicRange(ch)
+        val satMax = ZoomRange.vendorSatMax(ch)
+        Log.i(
+            TAG,
+            "open id=$id logical=$logical publicZoom=$zoomRange vendorSatMax=$satMax preview=$preview",
+        )
         val built = buildSession(req, id, ch, still)
         synchronized(lock) {
+            sessionGen += 1
             cameraId = id
             device = opened
             characteristics = ch
             previewSize = preview
-            hasStreamUseCase = ch.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
-                ?.contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE) == true
+            logicalCamera = logical
+            hasStreamUseCase = !logical &&
+                ch.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
+                    ?.contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE) == true
             requestBuilder = RepeatingRequestBuilder(ch, flags.halZoomRatio() && zoomRange != null)
-            params = params.copy(zoomRatio = 1.0, stillSize = listOf(still.width, still.height))
+            params = DEFAULT_PARAMS.copy(
+                zoomRatio = 1.0,
+                stillSize = listOf(still.width, still.height),
+                stabilization = if (logical) "off" else DEFAULT_PARAMS.stabilization,
+            )
             zoomRatio = 1f
             session = built
-            yuvReader = ImageReader.newInstance(analysis.width, analysis.height, ImageFormat.YUV_420_888, 2).also { reader ->
-                reader.setOnImageAvailableListener({ r ->
-                    r.acquireLatestImage()?.close()
-                    yuvFrames.incrementAndGet()
-                }, handler)
+            if (!logical) {
+                yuvReader = ImageReader.newInstance(analysis.width, analysis.height, ImageFormat.YUV_420_888, 2).also { reader ->
+                    reader.setOnImageAvailableListener({ r ->
+                        r.acquireLatestImage()?.close()
+                        yuvFrames.incrementAndGet()
+                    }, handler)
+                }
+                jpegReader = ImageReader.newInstance(still.width, still.height, ImageFormat.JPEG, 1)
+            } else {
+                yuvReader = null
+                jpegReader = null
             }
-            jpegReader = ImageReader.newInstance(still.width, still.height, ImageFormat.JPEG, 1)
         }
         emit("session_open", "info", "event.session_open")
         emit("stream_profile", "info", "event.stream_profile")
@@ -146,17 +168,21 @@ class Camera2Engine(
 
     override suspend fun closeSession() {
         val toClose: CameraDevice?
+        val waitMs: Long
         synchronized(lock) {
+            sessionGen += 1
             toClose = device
+            waitMs = if (logicalCamera) 3500 else 2500
             runCatching { captureSession?.stopRepeating() }
             runCatching { captureSession?.close() }
             captureSession = null
+            logicalCamera = false
         }
         if (toClose != null) {
             val signal = CompletableDeferred<Unit>()
             closedSignal = signal
             handler.post { runCatching { toClose.close() } }
-            withTimeoutOrNull(2500) { signal.await() }
+            withTimeoutOrNull(waitMs) { signal.await() }
         }
         synchronized(lock) {
             runCatching { yuvReader?.close() }
@@ -345,6 +371,12 @@ class Camera2Engine(
 
     private fun startSessionLocked(dev: CameraDevice) {
         val preview = previewSurface ?: return
+        val gen = sessionGen
+        if (logicalCamera) {
+            val oc = OutputConfiguration(preview)
+            createSessionWithFallback(dev, listOf(listOf(oc)), 0, gen, allowLegacy = true)
+            return
+        }
         val yuv = yuvReader
         val jpeg = jpegReader
         val plans = listOfNotNull(
@@ -359,7 +391,7 @@ class Camera2Engine(
             ),
             listOf(output(preview, CameraMetadata.SCALER_AVAILABLE_STREAM_USE_CASES_PREVIEW)),
         )
-        createSessionWithFallback(dev, plans, 0)
+        createSessionWithFallback(dev, plans, 0, gen, allowLegacy = false)
     }
 
     private fun output(surface: Surface, useCase: Int): OutputConfiguration {
@@ -374,35 +406,87 @@ class Camera2Engine(
         dev: CameraDevice,
         plans: List<List<OutputConfiguration>>,
         index: Int,
+        gen: Int,
+        allowLegacy: Boolean,
     ) {
+        if (sessionGen != gen) return
         if (index >= plans.size) {
+            if (allowLegacy) {
+                createLegacyPreviewSession(dev, gen)
+                return
+            }
+            Log.e(TAG, "all session plans failed for $cameraId")
             emit("session_error", "error", "event.session_error")
             return
         }
         val includeYuv = plans[index].size >= 3
-        val config = SessionConfiguration(
-            SessionConfiguration.SESSION_REGULAR,
-            plans[index],
-            executor,
-            object : CameraCaptureSession.StateCallback() {
-                override fun onConfigured(session: CameraCaptureSession) {
-                    synchronized(lock) {
-                        captureSession = session
-                        if (!includeYuv) {
-                            runCatching { yuvReader?.close() }
-                            yuvReader = null
-                        }
+        val callback = object : CameraCaptureSession.StateCallback() {
+            override fun onConfigured(session: CameraCaptureSession) {
+                if (sessionGen != gen) {
+                    runCatching { session.close() }
+                    return
+                }
+                synchronized(lock) {
+                    captureSession = session
+                    if (!includeYuv) {
+                        runCatching { yuvReader?.close() }
+                        yuvReader = null
                     }
-                    emit("stream_profile", "info", "event.stream_profile")
-                    updateRepeating()
                 }
+                emit("stream_profile", "info", "event.stream_profile")
+                updateRepeating()
+            }
 
-                override fun onConfigureFailed(session: CameraCaptureSession) {
-                    createSessionWithFallback(dev, plans, index + 1)
-                }
-            },
-        )
-        dev.createCaptureSession(config)
+            override fun onConfigureFailed(session: CameraCaptureSession) {
+                Log.w(TAG, "configure failed id=$cameraId plan=$index")
+                createSessionWithFallback(dev, plans, index + 1, gen, allowLegacy)
+            }
+        }
+        try {
+            val config = SessionConfiguration(
+                SessionConfiguration.SESSION_REGULAR,
+                plans[index],
+                executor,
+                callback,
+            )
+            dev.createCaptureSession(config)
+        } catch (t: Throwable) {
+            Log.w(TAG, "createCaptureSession threw id=$cameraId plan=$index", t)
+            createSessionWithFallback(dev, plans, index + 1, gen, allowLegacy)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun createLegacyPreviewSession(dev: CameraDevice, gen: Int) {
+        val preview = previewSurface ?: run {
+            emit("session_error", "error", "event.session_error")
+            return
+        }
+        try {
+            dev.createCaptureSession(
+                listOf(preview),
+                object : CameraCaptureSession.StateCallback() {
+                    override fun onConfigured(session: CameraCaptureSession) {
+                        if (sessionGen != gen) {
+                            runCatching { session.close() }
+                            return
+                        }
+                        synchronized(lock) { captureSession = session }
+                        emit("stream_profile", "info", "event.stream_profile")
+                        updateRepeating()
+                    }
+
+                    override fun onConfigureFailed(session: CameraCaptureSession) {
+                        Log.e(TAG, "legacy preview session failed for $cameraId")
+                        emit("session_error", "error", "event.session_error")
+                    }
+                },
+                handler,
+            )
+        } catch (t: Throwable) {
+            Log.e(TAG, "legacy createCaptureSession threw", t)
+            emit("session_error", "error", "event.session_error")
+        }
     }
 
     private fun updateRepeating() {
@@ -412,6 +496,7 @@ class Camera2Engine(
         val builderHelper: RepeatingRequestBuilder
         val p: CaptureParams
         val z: Float
+        val logical: Boolean
         synchronized(lock) {
             sess = captureSession ?: return
             dev = device ?: return
@@ -419,24 +504,32 @@ class Camera2Engine(
             builderHelper = requestBuilder ?: return
             p = params
             z = zoomRatio
+            logical = logicalCamera
         }
-        val builder = dev.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-        builder.addTarget(preview)
-        yuvReader?.surface?.let { builder.addTarget(it) }
-        builderHelper.apply(builder, p, z)
-        sess.setRepeatingRequest(
-            builder.build(),
-            object : CameraCaptureSession.CaptureCallback() {
-                override fun onCaptureCompleted(
-                    session: CameraCaptureSession,
-                    request: CaptureRequest,
-                    result: TotalCaptureResult,
-                ) {
-                    emitFrame(result)
-                }
-            },
-            handler,
-        )
+        try {
+            val builder = dev.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+            builder.addTarget(preview)
+            if (!logical) {
+                yuvReader?.surface?.let { builder.addTarget(it) }
+            }
+            builderHelper.apply(builder, p, z, logical = logical)
+            sess.setRepeatingRequest(
+                builder.build(),
+                object : CameraCaptureSession.CaptureCallback() {
+                    override fun onCaptureCompleted(
+                        session: CameraCaptureSession,
+                        request: CaptureRequest,
+                        result: TotalCaptureResult,
+                    ) {
+                        emitFrame(result)
+                    }
+                },
+                handler,
+            )
+        } catch (t: Throwable) {
+            Log.e(TAG, "setRepeatingRequest failed id=$cameraId", t)
+            emit("session_error", "error", "event.session_error")
+        }
     }
 
     private fun emitFrame(result: TotalCaptureResult) {
@@ -484,12 +577,14 @@ class Camera2Engine(
                     }
 
                     override fun onDisconnected(camera: CameraDevice) {
-                        camera.close()
+                        Log.w(TAG, "camera disconnected id=$id")
+                        handleDeviceDeath(camera, "camera disconnected")
                         if (cont.isActive) cont.resumeWithException(IllegalStateException("camera disconnected"))
                     }
 
                     override fun onError(camera: CameraDevice, error: Int) {
-                        camera.close()
+                        Log.e(TAG, "camera_error_$error id=$id")
+                        handleDeviceDeath(camera, "camera_error_$error")
                         if (cont.isActive) {
                             cont.resumeWithException(IllegalStateException("camera_error_$error"))
                         }
@@ -505,6 +600,22 @@ class Camera2Engine(
         }
     }
 
+    private fun handleDeviceDeath(camera: CameraDevice, reason: String) {
+        runCatching { camera.close() }
+        handler.post {
+            synchronized(lock) {
+                if (device !== camera) return@post
+                sessionGen += 1
+                runCatching { captureSession?.close() }
+                captureSession = null
+                device = null
+                session = null
+            }
+            emit("session_error", "error", "event.session_error")
+            Log.e(TAG, "device death: $reason")
+        }
+    }
+
     private fun emit(code: String, level: String, key: String) {
         eventFlow.tryEmit(
             EngineEvent(
@@ -517,6 +628,7 @@ class Camera2Engine(
     }
 
     companion object {
+        private const val TAG = "AutoCam.HAL"
         val DEFAULT_PARAMS = CaptureParams(
             aeMode = "on",
             afMode = "continuous_picture",

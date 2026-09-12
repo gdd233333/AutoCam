@@ -148,7 +148,7 @@ private fun cameraIdHint(id: String): String {
         "0" -> "main 23mm"
         "2" -> "UW 14mm"
         "3" -> "tele 120mm"
-        "4" -> "logical 0+2+3"
+        "4" -> "logical SAT 0+2+3; public 1–10x, vendor sat 120x"
         "1" -> "front"
         else -> "auto (0 or 4)"
     }

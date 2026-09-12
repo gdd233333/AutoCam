@@ -63,23 +63,43 @@ fun ViewfinderScreen(
     var params by remember {
         mutableStateOf(Camera2Engine.DEFAULT_PARAMS)
     }
+    var openError by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(engine) {
+        engine.events().collect { ev ->
+            if (ev.code == "session_error") {
+                openError = ev.messageKey
+            }
+        }
+    }
 
     LaunchedEffect(engine, mock, aiGuide, cameraId) {
-        runCatching { engine.closeSession() }
-        delay(150)
-        val session = engine.openSession(
-            OpenSessionRequest(
-                facing = if (cameraId == "1") "front" else "back",
-                profileId = "xiaomi.15s_pro.hyperos2",
-                previewMaxFps = 30,
-                previewMaxWidth = 1920,
-                sessionProfile = "still",
-                aiGuide = aiGuide,
-            ),
-        )
+        openError = null
+        zoom = 1f
+        if (!mock) {
+            runCatching { engine.closeSession() }
+            delay(200)
+        }
+        val result = runCatching {
+            engine.currentSession() ?: engine.openSession(
+                OpenSessionRequest(
+                    facing = if (cameraId == "1") "front" else "back",
+                    profileId = "xiaomi.15s_pro.hyperos2",
+                    previewMaxFps = 30,
+                    previewMaxWidth = 1920,
+                    sessionProfile = "still",
+                    aiGuide = aiGuide,
+                ),
+            )
+        }
+        val session = result.getOrNull()
+        if (session == null) {
+            openError = result.exceptionOrNull()?.message ?: "openSession failed"
+            return@LaunchedEffect
+        }
         zoomMin = session.zoomRatioRange.min.toFloat()
         zoomMax = session.zoomRatioRange.max.toFloat()
-        zoom = zoom.coerceIn(zoomMin, zoomMax)
+        zoom = 1f.coerceIn(zoomMin, zoomMax)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -134,18 +154,21 @@ fun ViewfinderScreen(
                 ),
                 color = Color.White,
             )
+            openError?.let { Text("error: $it", color = Color.Red) }
             Slider(
                 value = zoom.coerceIn(zoomMin, zoomMax),
                 onValueChange = { value ->
                     zoom = value
                     scope.launch {
-                        bus.setZoom(
-                            SetZoom(
-                                zoomRatio = value.toDouble(),
-                                rate = "immediate",
-                                source = "user_slider",
-                            ),
-                        )
+                        runCatching {
+                            bus.setZoom(
+                                SetZoom(
+                                    zoomRatio = value.toDouble(),
+                                    rate = "immediate",
+                                    source = "user_slider",
+                                ),
+                            )
+                        }
                     }
                 },
                 valueRange = zoomMin..zoomMax,

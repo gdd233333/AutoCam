@@ -80,6 +80,17 @@ Session 组合（`CameraDevice.isSessionConfigurationSupported`，camera `0`）�
 
 `4` 的 `DUAL_PHYSICAL_YUV`（PRIV + physical 0 YUV + physical 2 YUV）**supported=true**。
 
+Logical **`4` 变焦（dump 真值，第三方必须遵守）**：
+
+| 来源 | 范围 |
+|------|------|
+| 公开 `CONTROL_ZOOM_RATIO_RANGE` | **1.0–10.0** |
+| `android.scaler.availableMaxDigitalZoom` | 10.0 |
+| `com.xiaomi.camera.videosat.zoomRange` | 0.6–15 |
+| `xiaomi.smoothTransition.xiaomiSatMaxZoom` | **120**（系统相机 100x+ SAT） |
+
+第三方 repeating request **只能**写公开 1–10。把 100/120 塞进 `CONTROL_ZOOM_RATIO` 会越界，HAL 可能直接死。系统相机的 100x+ 走厂商 SAT/超分，不是这条 AOSP key。id `4` 与 `0/2/3/8` 冲突，预览只开 PRIV，不要带 JPEG/YUV/OIS/`STREAM_USE_CASE`。
+
 PR-08 建议：优先尝试隐藏 logical **`4`**（三颗物理镜头），失败再退回公开 `0` + `CONTROL_ZOOM_RATIO`。直接开 `2`/`3` 可单独用 UW/Tele。
 
 ## PR-08 Profile A 预览（dump 真值）

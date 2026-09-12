@@ -3,7 +3,6 @@ package com.autocam.hal
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Build
-import android.util.Range
 import com.autocam.engine.CaptureParams
 import kotlin.math.roundToInt
 
@@ -11,24 +10,46 @@ class RepeatingRequestBuilder(
     private val characteristics: CameraCharacteristics,
     private val useZoomRatio: Boolean,
 ) {
-    fun apply(builder: CaptureRequest.Builder, params: CaptureParams, zoomRatio: Float) {
+    fun apply(
+        builder: CaptureRequest.Builder,
+        params: CaptureParams,
+        zoomRatio: Float,
+        logical: Boolean = false,
+    ) {
         builder.set(CaptureRequest.CONTROL_AE_MODE, CaptureParamMapper.aeMode(params.aeMode))
         builder.set(CaptureRequest.CONTROL_AF_MODE, CaptureParamMapper.afMode(params.afMode))
         builder.set(CaptureRequest.CONTROL_AWB_MODE, CaptureParamMapper.awbMode(params.awbMode))
         if (params.aeMode == "off") {
             params.iso?.let { builder.set(CaptureRequest.SENSOR_SENSITIVITY, it) }
             params.exposureNs?.let { builder.set(CaptureRequest.SENSOR_EXPOSURE_TIME, it) }
-        } else {
+        } else if (!logical) {
             applyEv(builder, params.evBias)
         }
         if (params.afMode == "off") {
             params.focusDistance?.let { builder.set(CaptureRequest.LENS_FOCUS_DISTANCE, it.toFloat()) }
         }
-        applyFps(builder, params.fps)
-        builder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, CaptureParamMapper.oisMode(params.stabilization))
-        builder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE, CaptureParamMapper.eisMode(params.stabilization))
+        if (!logical) {
+            applyFps(builder, params.fps)
+        }
+        val ois = if (logical) {
+            CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_OFF
+        } else {
+            CaptureParamMapper.oisMode(params.stabilization)
+        }
+        val oisAvail = characteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION)
+        if (oisAvail != null && oisAvail.contains(ois)) {
+            builder.set(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE, ois)
+        }
+        val eis = if (logical) {
+            CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF
+        } else {
+            CaptureParamMapper.eisMode(params.stabilization)
+        }
+        val eisAvail = characteristics.get(CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES)
+        if (eisAvail != null && eisAvail.contains(eis)) {
+            builder.set(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE, eis)
+        }
         applyZoom(builder, zoomRatio)
-        builder.set(CaptureRequest.JPEG_QUALITY, params.jpegQuality.toByte())
     }
 
     private fun applyEv(builder: CaptureRequest.Builder, evBias: Double) {
@@ -50,8 +71,8 @@ class RepeatingRequestBuilder(
 
     private fun applyZoom(builder: CaptureRequest.Builder, zoomRatio: Float) {
         if (useZoomRatio && Build.VERSION.SDK_INT >= 30) {
-            val range = characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE)
-            val z = if (range != null) zoomRatio.coerceIn(range.lower, range.upper) else zoomRatio
+            val range = ZoomRange.publicRange(characteristics)
+            val z = ZoomRange.clampForRequest(zoomRatio, range)
             builder.set(CaptureRequest.CONTROL_ZOOM_RATIO, z)
             return
         }
