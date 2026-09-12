@@ -15,5 +15,5 @@ from ml.train.train_student import main as train_main
 
 if __name__ == "__main__":
     if "--teachers" not in sys.argv:
-        sys.argv += ["--teachers", "ml/teachers/viewfinder.npz"]
+        sys.argv += ["--teachers", "ml/teachers/viewfinder"]
     train_main()

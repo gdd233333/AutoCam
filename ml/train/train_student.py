@@ -16,36 +16,10 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from ml.datasets.npz_set import NpzDataset
 from ml.datasets.synthetic import make_batch
 from ml.students.losses import viewfinder_loss
 from ml.students.viewfinder import ViewfinderNet, count_parameters
-
-
-class NpzDataset(Dataset):
-    def __init__(self, path: Path) -> None:
-        data = np.load(path)
-        rgb = data["rgb"]
-        if rgb.ndim != 4:
-            raise ValueError("rgb must be NCHW or NHWC")
-        if rgb.shape[-1] == 3:
-            rgb = np.transpose(rgb, (0, 3, 1, 2))
-        self.rgb = torch.from_numpy(rgb.astype(np.float32))
-        self.box = torch.from_numpy(np.asarray(data["box"], dtype=np.float32))
-        if "label" in data:
-            self.label = torch.from_numpy(np.asarray(data["label"], dtype=np.int64))
-        else:
-            logits = np.asarray(data["logits"])
-            self.label = torch.from_numpy(np.argmax(logits, axis=-1).astype(np.int64))
-        if "obj" in data:
-            self.obj = torch.from_numpy(np.asarray(data["obj"], dtype=np.float32).reshape(-1, 1))
-        else:
-            self.obj = torch.ones(len(self.rgb), 1)
-
-    def __len__(self) -> int:
-        return self.rgb.shape[0]
-
-    def __getitem__(self, i: int):
-        return self.rgb[i], self.box[i], self.label[i], self.obj[i]
 
 
 def synthetic_loader(n: int, batch: int, seed: int) -> DataLoader:
