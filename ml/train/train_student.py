@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import sys
 from pathlib import Path
@@ -120,6 +121,49 @@ def _to_device(rgb, box, label, obj, device):
     return rgb, box, label, obj
 
 
+class ModelEma:
+    def __init__(self, model: torch.nn.Module, decay: float) -> None:
+        self.decay = decay
+        self.shadow = {k: v.detach().clone() for k, v in model.state_dict().items()}
+
+    @torch.no_grad()
+    def update(self, model: torch.nn.Module) -> None:
+        for k, v in model.state_dict().items():
+            if not torch.is_floating_point(v):
+                self.shadow[k] = v.detach().clone()
+                continue
+            self.shadow[k].mul_(self.decay).add_(v.detach(), alpha=1.0 - self.decay)
+
+    def copy_to(self, model: torch.nn.Module) -> None:
+        model.load_state_dict(self.shadow, strict=True)
+
+
+def _make_optimizer(model: ViewfinderNet, args: argparse.Namespace):
+    backbone = list(model.backbone.parameters())
+    heads = [p for n, p in model.named_parameters() if not n.startswith("backbone.")]
+    groups = [
+        {"params": backbone, "lr": args.lr * args.backbone_lr_mult},
+        {"params": heads, "lr": args.lr},
+    ]
+    if args.optim == "sgd":
+        return torch.optim.SGD(groups, momentum=0.9, nesterov=True, weight_decay=args.wd)
+    return torch.optim.AdamW(groups, weight_decay=args.wd)
+
+
+def _make_scheduler(opt, args: argparse.Namespace, steps_per_epoch: int):
+    total = max(1, args.epochs * steps_per_epoch)
+    warmup = max(0, int(args.warmup_epochs * steps_per_epoch))
+
+    def lr_lambda(step: int) -> float:
+        if warmup > 0 and step < warmup:
+            return 0.01 + 0.99 * step / max(1, warmup)
+        t = (step - warmup) / max(1, total - warmup)
+        t = min(max(t, 0.0), 1.0)
+        return 0.01 + 0.99 * 0.5 * (1.0 + math.cos(math.pi * t))
+
+    return torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda)
+
+
 def _hflip_batch(rgb, box):
     b = rgb.size(0)
     flip = torch.rand(b, device=rgb.device) < 0.5
@@ -184,11 +228,16 @@ def train(args: argparse.Namespace) -> None:
     class_weight = cw.to(device) if cw is not None else None
     wprint = [round(float(x), 3) for x in cw.tolist()] if cw is not None else "none"
     print("class counts", [int(x) for x in counts.tolist()], "weights", wprint)
-    print(f"dataloader workers={workers} pin_memory={pin} lr={args.lr} wd={args.wd} dropout={args.dropout}")
-    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wd)
+    print(
+        f"dataloader workers={workers} pin_memory={pin} optim={args.optim} "
+        f"lr={args.lr} backbone_lr={args.lr * args.backbone_lr_mult:.2e} wd={args.wd} "
+        f"warmup={args.warmup_epochs} ema={args.ema} dropout={args.dropout}"
+    )
+    opt = _make_optimizer(model, args)
     n_train = len(train_idx) + (len(syn) if syn is not None else 0)
     steps_per_epoch = max(1, (n_train + args.batch - 1) // args.batch)
-    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, args.epochs * steps_per_epoch))
+    sched = _make_scheduler(opt, args, steps_per_epoch)
+    ema = ModelEma(model, args.ema) if args.ema > 0 else None
     use_amp = device.type == "cuda" and args.amp
     amp_device = "cuda" if device.type == "cuda" else "cpu"
     scaler = torch.amp.GradScaler(amp_device, enabled=use_amp)
@@ -225,16 +274,25 @@ def train(args: argparse.Namespace) -> None:
                 loss = stats["loss"] / accum
             scaler.scale(loss).backward()
             if (i + 1) % accum == 0:
+                scaler.unscale_(opt)
+                if args.clip_grad > 0:
+                    torch.nn.utils.clip_grad_norm_(model.parameters(), args.clip_grad)
                 scaler.step(opt)
                 scaler.update()
                 opt.zero_grad(set_to_none=True)
                 sched.step()
+                if ema is not None:
+                    ema.update(model)
                 step += 1
             losses.append(float(stats["loss"].detach()))
         mean = float(np.mean(losses)) if losses else 0.0
         row: dict = {"epoch": epoch + 1, "train": mean}
         msg = f"epoch {epoch+1}/{args.epochs} loss={mean:.4f}"
         if val_loader is not None:
+            backup = None
+            if ema is not None:
+                backup = {k: v.detach().clone() for k, v in model.state_dict().items()}
+                ema.copy_to(model)
             model.eval()
             vlosses = []
             n_ok = 0
@@ -259,6 +317,8 @@ def train(args: argparse.Namespace) -> None:
                     pred_c = pred["composition_logits"].argmax(dim=-1)
                     n_ok += int((pred_c == label).sum().item())
                     n_all += int(label.numel())
+            if backup is not None:
+                model.load_state_dict(backup, strict=True)
             model.train()
             vmean = float(np.mean(vlosses))
             vacc = n_ok / max(n_all, 1)
@@ -269,7 +329,15 @@ def train(args: argparse.Namespace) -> None:
                 best_acc = vacc
                 bad_epochs = 0
                 best_path = args.out / "viewfinder_best.pt"
-                torch.save({"model": model.state_dict(), "history": history + [row], "val": vmean, "val_acc": vacc}, best_path)
+                torch.save(
+                    {
+                        "model": (ema.shadow if ema is not None else model.state_dict()),
+                        "history": history + [row],
+                        "val": vmean,
+                        "val_acc": vacc,
+                    },
+                    best_path,
+                )
                 msg += "  [best]"
             else:
                 bad_epochs += 1
@@ -305,6 +373,11 @@ def main() -> None:
     p.add_argument("--batch", type=int, default=16)
     p.add_argument("--accum", type=int, default=4, help="grad accum to 64 with batch 16")
     p.add_argument("--lr", type=float, default=1e-4)
+    p.add_argument("--optim", choices=("adamw", "sgd"), default="adamw")
+    p.add_argument("--backbone-lr-mult", type=float, default=0.3)
+    p.add_argument("--warmup-epochs", type=float, default=2.0)
+    p.add_argument("--ema", type=float, default=0.999, help="0 disables EMA")
+    p.add_argument("--clip-grad", type=float, default=1.0)
     p.add_argument("--wd", type=float, default=0.05)
     p.add_argument("--dropout", type=float, default=0.3)
     p.add_argument("--label-smoothing", type=float, default=0.1)

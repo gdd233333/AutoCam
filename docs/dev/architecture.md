@@ -1364,6 +1364,8 @@ minSdk 31，target/compile 35。第一真机 **Xiaomi 15S Pro**（已确认）�
 
 **硬门闩：** PR-07 产出 `hal_dump.json` 之前，不得把本文 15S Pro 的 physical id / fNumber / 流尺寸当实现常量。PR-08+ 消费 dump。
 
+**进度：** PR-01～08、软件 SAT、学生图/教师 npz/训练已落地（PICD val_acc best **0.638**，用 `viewfinder_best.pt`）。产品下一刀 **PR-09 静物快门**。PR-17/18 训练侧已做，端侧接入仍是 PR-19/20。
+
 ### PR-01 — `chore: repo skeleton, Gradle empty app, license, commitlint`
 
 - **Files:** `.gitignore`, `LICENSE`, `README.md`, `commitlint.config.cjs`, `.github/PULL_REQUEST_TEMPLATE.md`, `apps/android/` **可 `assembleDebug` 的空 Compose Activity**，`apps/ios/README.md`，`apps/harmony/README.md`（**首行：这不是 HyperOS；不要为 15S Pro 构建本目录**），`contracts/.gitkeep`，`shared/core-cpp/.gitkeep`，`ml/models/README.md`，`docs/dev/architecture.md` stub

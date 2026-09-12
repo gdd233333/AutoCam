@@ -31,7 +31,9 @@ python ml/datasets/download.py --cadb-ann
 # 把 CADB_Dataset/images 放到 ml/datasets/raw/cadb/images
 python ml/datasets/prepare.py --cadb ml/datasets/raw/cadb
 python ml/teachers/run_teachers.py --use-index-label --device cuda
-python ml/train/train_student.py --npz ml/teachers/viewfinder.npz --synthetic-n 512 --epochs 30 --batch 16 --accum 4 --amp
+python ml/train/train_student.py --npz ml/teachers/viewfinder --epochs 30 --amp --synthetic-n 0
+# 用 viewfinder_best.pt（按 val_acc）。AdamW + warmup 2 epoch + 骨干 lr×0.3 + EMA 0.999。
+# val_acc 仍 <0.30 再试：--optim sgd --lr 0.05
 ```
 
 CADB 图 zip（约 2GB）：Dropbox 链接在 `ml/datasets/manifest.yaml`。PICD 走官方百度/Drive，解压到 `ml/datasets/raw/picd` 后再 `--picd`。
