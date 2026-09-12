@@ -60,6 +60,19 @@ class PhysicalLensEnumerator(context: Context) {
         val yuv = map?.getOutputSizes(ImageFormat.YUV_420_888)?.map { listOf(it.width, it.height) } ?: emptyList()
         val priv = map?.getOutputSizes(ImageFormat.PRIVATE)?.map { listOf(it.width, it.height) } ?: emptyList()
         val tex = map?.getOutputSizes(SurfaceTexture::class.java)?.map { listOf(it.width, it.height) } ?: emptyList()
+        val pixelMax = if (Build.VERSION.SDK_INT >= 31) {
+            ch.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE_MAXIMUM_RESOLUTION)
+        } else {
+            null
+        }
+        val jpegMaxRes = if (Build.VERSION.SDK_INT >= 31) {
+            ch.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP_MAXIMUM_RESOLUTION)
+                ?.getOutputSizes(ImageFormat.JPEG)
+                ?.map { listOf(it.width, it.height) }
+                ?: emptyList()
+        } else {
+            emptyList()
+        }
         val hasLogical = caps.contains("LOGICAL_MULTI_CAMERA")
         val hasZoomRatio = zoomRange != null
         return CameraNodeDump(
@@ -80,6 +93,9 @@ class PhysicalLensEnumerator(context: Context) {
             privateSizes = priv,
             surfaceTextureSizes = tex,
             vendorTags = vendorTags(ch),
+            pixelArrayMaxRes = pixelMax?.let { listOf(it.width, it.height) },
+            jpegMaxResSizes = jpegMaxRes,
+            hasUltraHighResCapability = caps.contains("ULTRA_HIGH_RESOLUTION_SENSOR"),
         )
     }
 
@@ -92,7 +108,54 @@ class PhysicalLensEnumerator(context: Context) {
             }
             out[name] = stringify(ch.get(key))
         }
+        for (name in VENDOR_INT_ARRAY_KEYS) {
+            if (out.containsKey(name)) continue
+            val value = readVendorIntArray(ch, name) ?: continue
+            out[name] = stringify(value)
+        }
+        for (name in VENDOR_BYTE_KEYS) {
+            if (out.containsKey(name)) continue
+            val value = readVendorByte(ch, name)
+            if (value != null) out[name] = value.toString()
+        }
         return out
+    }
+
+    companion object {
+        val VENDOR_INT_ARRAY_KEYS = listOf(
+            "xiaomi.scaler.availableStreamConfigurations",
+            "com.xiaomi.scaler.availableStreamConfigurations",
+        )
+        val VENDOR_BYTE_KEYS = listOf(
+            "com.xiaomi.miCam.sensorInfo.qcfaSupported",
+            "com.xiaomi.control.qcfa.isSuperRemosaic",
+            "xiaomi.control.qcfa.isSuperRemosaic",
+        )
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun readVendorIntArray(ch: CameraCharacteristics, name: String): IntArray? {
+        return try {
+            val key = CameraCharacteristics.Key(name, IntArray::class.java)
+            ch.get(key)
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun readVendorByte(ch: CameraCharacteristics, name: String): Byte? {
+        return try {
+            val key = CameraCharacteristics.Key(name, Byte::class.javaObjectType)
+            ch.get(key)
+        } catch (_: Throwable) {
+            try {
+                val key = CameraCharacteristics.Key(name, ByteArray::class.java)
+                ch.get(key)?.firstOrNull()
+            } catch (_: Throwable) {
+                null
+            }
+        }
     }
 
     private fun stringify(value: Any?): String {

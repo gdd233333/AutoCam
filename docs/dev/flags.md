@@ -13,7 +13,7 @@
 | `flag.ai.refine_still` | bool | false | false |
 | `flag.grade.lut` | bool | false | false |
 | `flag.capture.dng` | bool | false | false |
-| `flag.capture.full_res` | bool | false | false |
+| `flag.capture.full_res` | bool | false | false | 15S Pro：JPEG 8192×6144 QCFA remosaic，需 `qcfa.isSuperRemosaic` |
 | `flag.debug.include_hal_dump` | bool | false | false |
 | `flag.debug.flag_secure` | bool | false | true |
 

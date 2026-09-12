@@ -112,6 +112,12 @@ class SessionComboProbe(context: Context) {
         return results
     }
 
+    fun probeNamed(
+        cameraId: String,
+        profile: String,
+        outputs: List<OutputSpec>,
+    ): SessionComboDump = probeProfile(cameraId, profile, outputs)
+
     private fun probeProfile(
         cameraId: String,
         profile: String,
@@ -252,7 +258,7 @@ class SessionComboProbe(context: Context) {
         return opened ?: throw IllegalStateException(error ?: "openCamera failed id=$cameraId")
     }
 
-    private data class OutputSpec(
+    data class OutputSpec(
         val format: String,
         val size: Size,
         val physicalId: String?,

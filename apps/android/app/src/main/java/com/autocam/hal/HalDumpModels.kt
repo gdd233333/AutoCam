@@ -9,6 +9,7 @@ data class HalDump(
     val cameras: List<CameraNodeDump>,
     val extraIds: List<ExtraIdDump> = emptyList(),
     val sessionCombos: List<SessionComboDump>,
+    val highRes: List<HighResDump> = emptyList(),
     val xiaomiCameraEngine: XiaomiEngineDump,
 )
 
@@ -44,6 +45,9 @@ data class CameraNodeDump(
     val privateSizes: List<List<Int>>,
     val surfaceTextureSizes: List<List<Int>>,
     val vendorTags: Map<String, String> = emptyMap(),
+    val pixelArrayMaxRes: List<Int>? = null,
+    val jpegMaxResSizes: List<List<Int>> = emptyList(),
+    val hasUltraHighResCapability: Boolean = false,
 )
 
 @Serializable
@@ -69,6 +73,16 @@ data class SessionOutputDump(
     val height: Int,
     val physicalCameraId: String? = null,
     val role: String,
+)
+
+@Serializable
+data class HighResDump(
+    val cameraId: String,
+    val qcfaSupported: String?,
+    val vendorJpeg50mp: List<List<Int>>,
+    val vendorStreamTagReadable: Boolean,
+    val remosaicRequestKeyPresent: Boolean,
+    val combos: List<SessionComboDump>,
 )
 
 @Serializable

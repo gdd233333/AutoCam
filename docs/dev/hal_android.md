@@ -59,7 +59,10 @@ Session 组合（`CameraDevice.isSessionConfigurationSupported`，camera `0`）�
 含义（PR-08 必须遵守）：
 
 - **公开** `getCameraIdList()` 只有 `0`/`1`。UW/Tele **可以**用隐藏 id 打开（见下）。
-- JPEG 默认 4080×3072 / 4096×3072，约 12.5 MP。
+- JPEG **默认** 4080×3072 / 4096×3072，约 12.5 MP（QCFA 四合一）。
+- **50 MP 存在**：厂商流表 `xiaomi.scaler.availableStreamConfigurations` 有 JPEG **8192×6144**（50.3 MP）和 8160×6144。公共 `StreamConfigurationMap` **不列出**这些尺寸，也没有 `ULTRA_HIGH_RESOLUTION_SENSOR`。
+- `com.xiaomi.miCam.sensorInfo.qcfaSupported=1`，CaptureRequest 键 `qcfa.isSuperRemosaic` 存在。系统相机的「50MP 单独开关」就是这条 remosaic，不是另一颗镜头。
+- 第三方探测：`isSessionConfigurationSupported(PRIV 1080p + JPEG 8192×6144)` 在 id `0/2/3/4` 上均为 **true**。真正出 50MP 像素还要在 still 请求里打开 remosaic；录像/部分算法模式不会走这条。
 - `CameraDeviceSetup` 反射未用上，回退 `openCamera`。需要用户授予 CAMERA。
 
 ## 隐藏 id（已用 Camera2 打开）

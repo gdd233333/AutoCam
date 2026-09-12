@@ -20,8 +20,13 @@ class HalDumper(
             as android.hardware.camera2.CameraManager
         val extraIds = ExtraIdProbe(manager, enumerator).probe()
         val extraWithChars = extraIds.filter { !it.inPublicList && it.characteristicsOk && it.node != null }
-        val combos = cameras.flatMap { SessionComboProbe(context).probe(it) } +
-            extraWithChars.mapNotNull { it.node }.flatMap { SessionComboProbe(context).probe(it) }
+        val sessionProbe = SessionComboProbe(context)
+        val combos = cameras.flatMap { sessionProbe.probe(it) } +
+            extraWithChars.mapNotNull { it.node }.flatMap { sessionProbe.probe(it) }
+        val highResIds = listOf("0", "2", "3", "4").filter { id ->
+            cameras.any { it.cameraId == id } || extraIds.any { it.cameraId == id && it.characteristicsOk }
+        }
+        val highRes = HighResProbe(manager, sessionProbe).probe(highResIds)
         return HalDump(
             dumpedAtIso = Instant.now().toString(),
             build = BuildDump(
@@ -38,6 +43,7 @@ class HalDumper(
             cameras = cameras,
             extraIds = extraIds,
             sessionCombos = combos,
+            highRes = highRes,
             xiaomiCameraEngine = XiaomiEngineProbe().probe(context),
         )
     }
