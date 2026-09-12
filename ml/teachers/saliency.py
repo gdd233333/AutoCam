@@ -58,36 +58,33 @@ def saliency_map(rgb: np.ndarray) -> np.ndarray:
 
 
 def box_from_saliency(sal: np.ndarray) -> tuple[np.ndarray, float]:
-    """Largest blob above mean+1σ. Returns xyxy and area fraction. Empty → obj=0."""
+    """BBox of pixels above mean+1σ. Returns xyxy and area fraction."""
     h, w = sal.shape
     thr = float(sal.mean() + sal.std())
-    mask = sal >= thr
-    if mask.sum() < 0.015 * h * w:
+    ys, xs = np.nonzero(sal >= thr)
+    if ys.size < 0.015 * h * w:
         return np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32), 0.0
-    visited = np.zeros_like(mask, dtype=bool)
-    best = None
-    best_n = 0
-    ys, xs = np.where(mask)
-    for y0, x0 in zip(ys.tolist(), xs.tolist()):
-        if visited[y0, x0]:
-            continue
-        stack = [(y0, x0)]
-        visited[y0, x0] = True
-        cells = []
-        while stack:
-            y, x = stack.pop()
-            cells.append((y, x))
-            for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0)):
-                ny, nx = y + dy, x + dx
-                if 0 <= ny < h and 0 <= nx < w and mask[ny, nx] and not visited[ny, nx]:
-                    visited[ny, nx] = True
-                    stack.append((ny, nx))
-        if len(cells) > best_n:
-            best_n = len(cells)
-            ys_c = [c[0] for c in cells]
-            xs_c = [c[1] for c in cells]
-            best = (min(xs_c), min(ys_c), max(xs_c) + 1, max(ys_c) + 1)
-    if best is None or best_n < 0.015 * h * w:
-        return np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32), 0.0
-    area = best_n / float(h * w)
-    return np.array(best, dtype=np.float32), float(area)
+    x0, x1 = int(xs.min()), int(xs.max()) + 1
+    y0, y1 = int(ys.min()), int(ys.max()) + 1
+    area = float(ys.size) / float(h * w)
+    return np.array([x0, y0, x1, y1], dtype=np.float32), area
+
+
+def fast_subject_box(rgb_u8: np.ndarray) -> tuple[np.ndarray, float]:
+    """Downsample to ~64px, saliency bbox, scale back to full resolution."""
+    h, w = rgb_u8.shape[:2]
+    step = max(1, min(h, w) // 64)
+    small = rgb_u8[::step, ::step]
+    gray = small.astype(np.float32)
+    if gray.ndim == 3:
+        gray = 0.299 * gray[:, :, 0] + 0.587 * gray[:, :, 1] + 0.114 * gray[:, :, 2]
+    sal = saliency_map(np.stack([gray, gray, gray], axis=-1) / 255.0)
+    xyxy, area = box_from_saliency(sal)
+    if area < 0.015:
+        return xyxy, area
+    xyxy = xyxy * float(step)
+    xyxy[0] = min(xyxy[0], w - 1)
+    xyxy[2] = min(max(xyxy[2], xyxy[0] + 1), w)
+    xyxy[1] = min(xyxy[1], h - 1)
+    xyxy[3] = min(max(xyxy[3], xyxy[1] + 1), h)
+    return xyxy.astype(np.float32), area

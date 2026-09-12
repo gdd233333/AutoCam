@@ -7,6 +7,32 @@ import numpy as np
 from ml.students.spec import INPUT_SIZE, PAD_VALUE
 
 
+def letterbox_pil(path, size: int = INPUT_SIZE) -> tuple[np.ndarray, dict]:
+    """Open image, letterbox to size, return HxWx3 uint8 and meta."""
+    from PIL import Image
+
+    img = Image.open(path).convert("RGB")
+    w, h = img.size
+    scale = size / max(h, w)
+    nw, nh = int(round(w * scale)), int(round(h * scale))
+    nw, nh = max(nw, 1), max(nh, 1)
+    img = img.resize((nw, nh), Image.BILINEAR)
+    canvas = Image.new("RGB", (size, size), (114, 114, 114))
+    left = (size - nw) // 2
+    top = (size - nh) // 2
+    canvas.paste(img, (left, top))
+    meta = {
+        "scale": scale,
+        "pad_x": left,
+        "pad_y": top,
+        "src_w": w,
+        "src_h": h,
+        "resized_w": nw,
+        "resized_h": nh,
+    }
+    return np.asarray(canvas), meta
+
+
 def letterbox_rgb(rgb: np.ndarray, size: int = INPUT_SIZE, pad_value: float = PAD_VALUE) -> tuple[np.ndarray, dict]:
     """rgb: HxWx3 float32 0-1 or uint8. Returns size x size x 3 float32 0-1 and meta."""
     if rgb.dtype != np.float32:
