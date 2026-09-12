@@ -14,8 +14,14 @@ class HalDumper(
     private val eventLog: EventLog? = null,
 ) {
     fun dump(): HalDump {
-        val cameras = PhysicalLensEnumerator(context).enumerate()
-        val combos = cameras.flatMap { SessionComboProbe(context).probe(it) }
+        val enumerator = PhysicalLensEnumerator(context)
+        val cameras = enumerator.enumerate()
+        val manager = context.getSystemService(android.content.Context.CAMERA_SERVICE)
+            as android.hardware.camera2.CameraManager
+        val extraIds = ExtraIdProbe(manager, enumerator).probe()
+        val extraWithChars = extraIds.filter { !it.inPublicList && it.characteristicsOk && it.node != null }
+        val combos = cameras.flatMap { SessionComboProbe(context).probe(it) } +
+            extraWithChars.mapNotNull { it.node }.flatMap { SessionComboProbe(context).probe(it) }
         return HalDump(
             dumpedAtIso = Instant.now().toString(),
             build = BuildDump(
@@ -30,6 +36,7 @@ class HalDumper(
                 fingerprint = Build.FINGERPRINT,
             ),
             cameras = cameras,
+            extraIds = extraIds,
             sessionCombos = combos,
             xiaomiCameraEngine = XiaomiEngineProbe().probe(context),
         )

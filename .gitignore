@@ -44,6 +44,7 @@ Thumbs.db
 *~
 uidump.xml
 apps/android/uidump.xml
+docs/dev/dumps/media_camera_dumpsys.txt
 
 # Secrets
 *.jks

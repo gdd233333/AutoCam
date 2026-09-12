@@ -58,7 +58,23 @@ Session 组合（`CameraDevice.isSessionConfigurationSupported`，camera `0`）�
 
 含义（PR-08 必须遵守）：
 
-- 不要写死 UW 0.61x 或 tele 5.22x 的 **独立 physical id**；第三方 HAL 没有。
-- 变焦走 `CONTROL_ZOOM_RATIO` 1.0–10.0（系统相机会在内部切镜）。
-- JPEG 默认用 dump 的 4080×3072 / 4096×3072，约 12.5 MP，不是营销 50 MP。
-- `CameraDeviceSetup` 反射在此机未用上，回退 `openCamera` 探测。需要用户授予 CAMERA（HyperOS 禁止 `pm grant` / `input tap`）。
+- **公开** `getCameraIdList()` 只有 `0`/`1`。UW/Tele **可以**用隐藏 id 打开（见下）。
+- JPEG 默认 4080×3072 / 4096×3072，约 12.5 MP。
+- `CameraDeviceSetup` 反射未用上，回退 `openCamera`。需要用户授予 CAMERA。
+
+## 隐藏 id（已用 Camera2 打开）
+
+`getCameraIdList()` 不返回它们，但 `getCameraCharacteristics` + `openCamera` **成功**（第三方 + CAMERA 权限）：
+
+| Camera2 id | HAL | facing | 焦距 mm | 光圈 | 35mm（dumpsys） | 角色 |
+|------------|-----|--------|---------|------|-----------------|------|
+| **`2`** | vendor_xring/2 | back | 2.16 | 2.2 | **14 mm** | UW |
+| **`3`** | vendor_xring/3 | back | 19.4 | 2.5 | **120 mm** | Tele 5x |
+| **`4`** | vendor_xring/4 | back | 6.68 | 1.44 | 23 mm | **LOGICAL** physical=`0,2,3` |
+| `5`/`6`/`7` | 5–7 | front | 2.83 | 2.0 | — | 前置变体 |
+| `8` | 8 | back | 6.68 | 1.44 | 23 mm | 另一 LOGICAL `0,2,3` |
+| `9`/`10` | 9–10 | — | — | — | — | **system only**，characteristics 被拒 |
+
+`4` 的 `DUAL_PHYSICAL_YUV`（PRIV + physical 0 YUV + physical 2 YUV）**supported=true**。
+
+PR-08 建议：优先尝试隐藏 logical **`4`**（三颗物理镜头），失败再退回公开 `0` + `CONTROL_ZOOM_RATIO`。直接开 `2`/`3` 可单独用 UW/Tele。

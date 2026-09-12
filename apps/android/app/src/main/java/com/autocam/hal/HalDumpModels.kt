@@ -7,6 +7,7 @@ data class HalDump(
     val dumpedAtIso: String,
     val build: BuildDump,
     val cameras: List<CameraNodeDump>,
+    val extraIds: List<ExtraIdDump> = emptyList(),
     val sessionCombos: List<SessionComboDump>,
     val xiaomiCameraEngine: XiaomiEngineDump,
 )
@@ -42,6 +43,7 @@ data class CameraNodeDump(
     val yuv420888Sizes: List<List<Int>>,
     val privateSizes: List<List<Int>>,
     val surfaceTextureSizes: List<List<Int>>,
+    val vendorTags: Map<String, String> = emptyMap(),
 )
 
 @Serializable
@@ -67,6 +69,16 @@ data class SessionOutputDump(
     val height: Int,
     val physicalCameraId: String? = null,
     val role: String,
+)
+
+@Serializable
+data class ExtraIdDump(
+    val cameraId: String,
+    val inPublicList: Boolean,
+    val characteristicsOk: Boolean,
+    val openOk: Boolean? = null,
+    val error: String? = null,
+    val node: CameraNodeDump? = null,
 )
 
 @Serializable

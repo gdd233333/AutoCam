@@ -30,6 +30,9 @@ class EnumerationInstrumentedTest {
             "Profile A must be supported on 15S Pro Camera2",
             dump.sessionCombos.any { it.profile == "A_STILL" && it.supported == true },
         )
+        val extraOpen = dump.extraIds.filter { it.characteristicsOk && it.openOk == true }.map { it.cameraId }
+        assertTrue("hidden UW id 2 must open", extraOpen.contains("2"))
+        assertTrue("hidden tele id 3 must open", extraOpen.contains("3"))
         assertFalse(
             "Xiaomi Camera Engine SDK is not a public third-party AAR",
             dump.xiaomiCameraEngine.sdkOnClasspath,

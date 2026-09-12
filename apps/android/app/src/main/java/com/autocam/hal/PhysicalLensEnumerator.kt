@@ -9,11 +9,13 @@ import android.os.Build
 class PhysicalLensEnumerator(context: Context) {
     private val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
+    fun publicIds(): List<String> = manager.cameraIdList.toList()
+
     fun enumerate(): List<CameraNodeDump> {
-        return manager.cameraIdList.map { id -> dumpCamera(id) }
+        return publicIds().map { id -> dumpCamera(id) }
     }
 
-    private fun dumpCamera(id: String): CameraNodeDump {
+    fun dumpCamera(id: String): CameraNodeDump {
         val ch = manager.getCameraCharacteristics(id)
         val facing = when (ch.get(CameraCharacteristics.LENS_FACING)) {
             CameraCharacteristics.LENS_FACING_BACK -> "back"
@@ -77,7 +79,33 @@ class PhysicalLensEnumerator(context: Context) {
             yuv420888Sizes = yuv,
             privateSizes = priv,
             surfaceTextureSizes = tex,
+            vendorTags = vendorTags(ch),
         )
+    }
+
+    private fun vendorTags(ch: CameraCharacteristics): Map<String, String> {
+        val out = linkedMapOf<String, String>()
+        for (key in ch.keys) {
+            val name = key.name ?: continue
+            if (!name.contains("xiaomi", ignoreCase = true) && !name.startsWith("com.xiaomi")) {
+                continue
+            }
+            out[name] = stringify(ch.get(key))
+        }
+        return out
+    }
+
+    private fun stringify(value: Any?): String {
+        return when (value) {
+            null -> "null"
+            is FloatArray -> value.joinToString(prefix = "[", postfix = "]")
+            is IntArray -> value.joinToString(prefix = "[", postfix = "]")
+            is LongArray -> value.joinToString(prefix = "[", postfix = "]")
+            is DoubleArray -> value.joinToString(prefix = "[", postfix = "]")
+            is ByteArray -> value.take(32).joinToString(prefix = "[", postfix = "]")
+            is Array<*> -> value.joinToString(prefix = "[", postfix = "]")
+            else -> value.toString()
+        }
     }
 
     private fun capabilityName(value: Int): String {
