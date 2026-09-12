@@ -91,7 +91,7 @@ Logical **`4` 变焦（dump 真值，第三方必须遵守）**：
 
 第三方 repeating request **只能**写公开 1–10。把 100/120 塞进 `CONTROL_ZOOM_RATIO` 会越界，HAL 可能直接死。系统相机的 100x+ 走厂商 SAT/超分，不是这条 AOSP key。id `4` 与 `0/2/3/8` 冲突；第三方 `setRepeatingRequest` 会 `session_error`（已不再杀进程）。
 
-**软件 SAT（Cycle cam `4` 或 `hal.multi_lens`）**：不打开硬件 `4`。按用户变焦 0.61–10（相对主摄 23 mm）在物理 `2` / `0` / `3` 之间切，滞回 2 次、freeze+fade 盖住 close/open。切点默认 UW→main `0.95` / main→UW `0.72`，main→tele `4.80` / tele→main `3.60`。每颗镜头的 `CONTROL_ZOOM_RATIO` 从该传感器的 1.0 起算（UW 用户 0.61→请求 1.0，tele 用户 5.22→请求 1.0）。直接开 `2`/`3` 仍可单独用 UW/Tele。
+**软件 SAT（Cycle cam `4` 或 `hal.multi_lens`）**：不打开硬件 `4`。按用户变焦 0.61–10（相对主摄 23 mm）在物理 `2` / `0` / `3` 之间切。远跳一次到位（UW 可直达 tele），预览单流、关镜只等 ~180 ms。切点默认 UW→main `0.95` / main→UW `0.72`，main→tele `4.80` / tele→main `3.60`。每颗镜头的 `CONTROL_ZOOM_RATIO` 从该传感器的 1.0 起算。直接开 `2`/`3` 仍可单独用 UW/Tele。
 
 ## PR-08 Profile A 预览（dump 真值）
 

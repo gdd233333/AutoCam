@@ -78,7 +78,7 @@ fun ViewfinderScreen(
     var freezeHold by remember { mutableStateOf(false) }
     val freezeAlpha by animateFloatAsState(
         targetValue = if (freezeHold) 1f else 0f,
-        animationSpec = if (freezeHold) tween(0) else tween(320),
+        animationSpec = if (freezeHold) tween(0) else tween(140),
         finishedListener = { if (!freezeHold) freezeBmp = null },
         label = "satFreeze",
     )

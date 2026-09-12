@@ -46,8 +46,16 @@ class ZoomBlender(
         val mainToTele = mainTele?.upSwitch ?: 4.80
         val teleToMain = mainTele?.downSwitch ?: 3.60
         return when (current) {
-            LENS_UW -> if (zoom >= uwToMain) LENS_MAIN else LENS_UW
-            LENS_TELE -> if (zoom <= teleToMain) LENS_MAIN else LENS_TELE
+            LENS_UW -> when {
+                zoom >= mainToTele -> LENS_TELE
+                zoom >= uwToMain -> LENS_MAIN
+                else -> LENS_UW
+            }
+            LENS_TELE -> when {
+                zoom <= mainToUw -> LENS_UW
+                zoom <= teleToMain -> LENS_MAIN
+                else -> LENS_TELE
+            }
             else -> when {
                 zoom <= mainToUw -> LENS_UW
                 zoom >= mainToTele -> LENS_TELE

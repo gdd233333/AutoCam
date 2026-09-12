@@ -29,10 +29,18 @@ class ZoomBlenderTest {
     }
 
     @Test
-    fun uwDoesNotJumpToTele() {
+    fun uwJumpsToTeleWhenZoomIsTele() {
         val b = ZoomBlender()
         b.reset(ZoomBlender.LENS_UW)
-        assertEquals(ZoomBlender.LENS_MAIN, b.desiredLens(6.0, ZoomBlender.LENS_UW))
+        assertEquals(ZoomBlender.LENS_TELE, b.desiredLens(6.0, ZoomBlender.LENS_UW))
+        assertEquals(ZoomBlender.LENS_MAIN, b.desiredLens(1.2, ZoomBlender.LENS_UW))
+    }
+
+    @Test
+    fun teleJumpsToUwWhenWide() {
+        val b = ZoomBlender()
+        b.reset(ZoomBlender.LENS_TELE)
+        assertEquals(ZoomBlender.LENS_UW, b.desiredLens(0.65, ZoomBlender.LENS_TELE))
     }
 }
 

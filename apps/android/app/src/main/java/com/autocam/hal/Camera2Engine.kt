@@ -50,10 +50,11 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -99,7 +100,6 @@ class Camera2Engine(
     private var physicalOverride: String? = null
     private var switchingLens = false
     private var satAwaitingFirstFrame = false
-    private var queuedLens: String? = null
     private var satGen = 0
     private val blender = ZoomBlender()
     private val engineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -132,7 +132,6 @@ class Camera2Engine(
         if (satMode && !reopening) {
             blender.reset(ZoomBlender.LENS_MAIN)
             satUserZoom = 1.0
-            queuedLens = null
         }
         val id = when {
             physicalOverride != null -> physicalOverride.also { physicalOverride = null }!!
@@ -166,7 +165,7 @@ class Camera2Engine(
             characteristics = ch
             previewSize = preview
             logicalCamera = logical
-            hasStreamUseCase = !logical &&
+            hasStreamUseCase = !logical && !satMode &&
                 ch.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
                     ?.contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE) == true
             requestBuilder = RepeatingRequestBuilder(ch, flags.halZoomRatio() && zoomRange != null)
@@ -182,7 +181,7 @@ class Camera2Engine(
             )
             zoomRatio = mapped
             session = if (satMode) satSession(built) else built
-            if (!logical) {
+            if (!logical && !satMode) {
                 yuvReader = ImageReader.newInstance(analysis.width, analysis.height, ImageFormat.YUV_420_888, 2).also { reader ->
                     reader.setOnImageAvailableListener({ r ->
                         r.acquireLatestImage()?.close()
@@ -201,7 +200,7 @@ class Camera2Engine(
         if (surface != null) {
             handler.post { runCatching { startSessionLocked(opened) } }
         }
-        return built
+        return synchronized(lock) { session } ?: built
     }
 
     override suspend fun closeSession() {
@@ -210,7 +209,11 @@ class Camera2Engine(
         synchronized(lock) {
             sessionGen += 1
             toClose = device
-            waitMs = if (logicalCamera) 3500 else 2500
+            waitMs = when {
+                satMode -> 180
+                logicalCamera -> 3500
+                else -> 2500
+            }
             runCatching { captureSession?.stopRepeating() }
             runCatching { captureSession?.close() }
             captureSession = null
@@ -219,7 +222,7 @@ class Camera2Engine(
         if (toClose != null) {
             val signal = CompletableDeferred<Unit>()
             closedSignal = signal
-            handler.post { runCatching { toClose.close() } }
+            runCatching { toClose.close() }
             withTimeoutOrNull(waitMs) { signal.await() }
         }
         synchronized(lock) {
@@ -286,7 +289,7 @@ class Camera2Engine(
             put("toLensId", lensId)
         }
         emit("freeze_fade", "info", "event.freeze_fade") { put("phase", "hold") }
-        requestLensSwitch(lensId)
+        requestLensSwitch()
     }
 
     override fun guideUser(cmd: GuideUser) {
@@ -327,10 +330,7 @@ class Camera2Engine(
     }
 
     private fun onSatZoomChanged() {
-        if (switchingLens) {
-            queuedLens = blender.desiredLens(satUserZoom)
-            return
-        }
+        if (switchingLens) return
         val tick = blender.tick(satUserZoom)
         if (tick.switched && tick.fromLensId != null) {
             Log.i(TAG, "sat switch ${tick.fromLensId} -> ${tick.activeLensId} zoom=$satUserZoom")
@@ -339,12 +339,11 @@ class Camera2Engine(
                 put("toLensId", tick.activeLensId)
             }
             emit("freeze_fade", "info", "event.freeze_fade") { put("phase", "hold") }
-            requestLensSwitch(tick.activeLensId)
+            requestLensSwitch()
         }
     }
 
-    private fun requestLensSwitch(lensId: String) {
-        queuedLens = lensId
+    private fun requestLensSwitch() {
         val gen = satGen
         engineScope.launch {
             if (!switchMutex.tryLock()) return@launch
@@ -352,9 +351,12 @@ class Camera2Engine(
             try {
                 while (true) {
                     if (satGen != gen || !satMode) break
-                    val target = queuedLens ?: break
-                    queuedLens = null
-                    physicalOverride = SatZoomMap.cameraId(target)
+                    val target = blender.desiredLens(satUserZoom)
+                    val currentId = synchronized(lock) { cameraId }
+                    val targetId = SatZoomMap.cameraId(target)
+                    if (targetId == currentId) break
+                    blender.force(target)
+                    physicalOverride = targetId
                     val req = lastOpenReq ?: break
                     openSession(req)
                     satAwaitingFirstFrame = true
@@ -532,9 +534,8 @@ class Camera2Engine(
     private fun startSessionLocked(dev: CameraDevice) {
         val preview = previewSurface ?: return
         val gen = sessionGen
-        if (logicalCamera) {
-            val oc = OutputConfiguration(preview)
-            createSessionWithFallback(dev, listOf(listOf(oc)), 0, gen, allowLegacy = true)
+        if (logicalCamera || satMode) {
+            createLegacyPreviewSession(dev, gen)
             return
         }
         val yuv = yuvReader
@@ -740,12 +741,30 @@ class Camera2Engine(
     }
 
     private suspend fun openDevice(id: String): CameraDevice {
+        var last: Throwable? = null
+        repeat(3) { attempt ->
+            try {
+                return withTimeout(1200) { openDeviceOnce(id) }
+            } catch (t: Throwable) {
+                last = t
+                Log.w(TAG, "open $id attempt ${attempt + 1} failed: ${t.message}")
+                delay(60L * (attempt + 1))
+            }
+        }
+        throw last ?: IllegalStateException("open $id failed")
+    }
+
+    private suspend fun openDeviceOnce(id: String): CameraDevice {
         return suspendCancellableCoroutine { cont ->
             manager.openCamera(
                 id,
                 object : CameraDevice.StateCallback() {
                     override fun onOpened(camera: CameraDevice) {
-                        if (cont.isActive) cont.resume(camera)
+                        if (cont.isActive) {
+                            cont.resume(camera)
+                        } else {
+                            runCatching { camera.close() }
+                        }
                     }
 
                     override fun onDisconnected(camera: CameraDevice) {
