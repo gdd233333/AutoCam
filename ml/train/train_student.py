@@ -21,7 +21,7 @@ if str(ROOT) not in sys.path:
 from ml.datasets.npz_set import NpzDataset
 from ml.datasets.synthetic import make_batch
 from ml.students.losses import class_weights_from_counts, viewfinder_loss
-from ml.students.spec import LAMBDA_CE
+from ml.students.spec import CLASS_NAMES, LAMBDA_CE
 from ml.students.viewfinder import ViewfinderNet, count_parameters
 
 
@@ -227,7 +227,10 @@ def train(args: argparse.Namespace) -> None:
     cw = class_weights_from_counts(counts, args.class_weight)
     class_weight = cw.to(device) if cw is not None else None
     wprint = [round(float(x), 3) for x in cw.tolist()] if cw is not None else "none"
+    maj_i = int(counts.argmax().item())
+    maj_frac = float(counts[maj_i] / counts.sum().clamp(min=1.0))
     print("class counts", [int(x) for x in counts.tolist()], "weights", wprint)
+    print(f"majority baseline val_acc≈{maj_frac:.3f} ({CLASS_NAMES[maj_i]}) — stuck here means not learning classes yet")
     print(
         f"dataloader workers={workers} pin_memory={pin} optim={args.optim} "
         f"lr={args.lr} backbone_lr={args.lr * args.backbone_lr_mult:.2e} wd={args.wd} "
@@ -246,10 +249,11 @@ def train(args: argparse.Namespace) -> None:
     best_acc = -1.0
     bad_epochs = 0
     args.out.mkdir(parents=True, exist_ok=True)
-    print("hint: majority-class acc may be ~0.4; watch val_acc not weighted val. stop when val_acc stalls.")
+    print("hint: train loss≈2.1 is near chance; with label smoothing it stays a bit higher. val↓ without acc↑ = more confident majority guesses.")
     model.train()
     step = 0
     opt.zero_grad(set_to_none=True)
+    warmup_gate = int(math.ceil(args.warmup_epochs))
     loader = _epoch_loader(npz, train_idx, syn, args.batch, workers, pin, args.seed, 0)
     for epoch in range(args.epochs):
         if epoch > 0:
@@ -288,9 +292,12 @@ def train(args: argparse.Namespace) -> None:
         mean = float(np.mean(losses)) if losses else 0.0
         row: dict = {"epoch": epoch + 1, "train": mean}
         msg = f"epoch {epoch+1}/{args.epochs} loss={mean:.4f}"
+        past_warmup = (epoch + 1) > warmup_gate
         if val_loader is not None:
             backup = None
-            if ema is not None:
+            # EMA lags hard during warmup; score the live weights until warmup ends.
+            use_ema_val = ema is not None and past_warmup
+            if use_ema_val:
                 backup = {k: v.detach().clone() for k, v in model.state_dict().items()}
                 ema.copy_to(model)
             model.eval()
@@ -324,14 +331,21 @@ def train(args: argparse.Namespace) -> None:
             vacc = n_ok / max(n_all, 1)
             row["val"] = vmean
             row["val_acc"] = vacc
+            row["ema_val"] = use_ema_val
             msg += f" val={vmean:.4f} val_acc={vacc:.3f}"
+            if abs(vacc - maj_frac) < 0.01:
+                msg += "  [=majority]"
+            if not past_warmup:
+                msg += "  [warmup]"
+                bad_epochs = 0
             if vacc > best_acc + 1e-4:
                 best_acc = vacc
-                bad_epochs = 0
+                if past_warmup:
+                    bad_epochs = 0
                 best_path = args.out / "viewfinder_best.pt"
                 torch.save(
                     {
-                        "model": (ema.shadow if ema is not None else model.state_dict()),
+                        "model": (ema.shadow if use_ema_val and ema is not None else model.state_dict()),
                         "history": history + [row],
                         "val": vmean,
                         "val_acc": vacc,
@@ -339,13 +353,18 @@ def train(args: argparse.Namespace) -> None:
                     best_path,
                 )
                 msg += "  [best]"
-            else:
+            elif past_warmup:
                 bad_epochs += 1
                 msg += f"  (no improve {bad_epochs}/{args.patience})"
         history.append(row)
         print(msg)
         (args.out / "history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
-        if val_loader is not None and args.patience > 0 and bad_epochs >= args.patience:
+        if (
+            val_loader is not None
+            and past_warmup
+            and args.patience > 0
+            and bad_epochs >= args.patience
+        ):
             print(f"early stop: val_acc not improving for {args.patience} epochs (best acc={best_acc:.3f})")
             break
     ckpt = args.out / "viewfinder_last.pt"
@@ -375,7 +394,7 @@ def main() -> None:
     p.add_argument("--lr", type=float, default=1e-4)
     p.add_argument("--optim", choices=("adamw", "sgd"), default="adamw")
     p.add_argument("--backbone-lr-mult", type=float, default=0.3)
-    p.add_argument("--warmup-epochs", type=float, default=2.0)
+    p.add_argument("--warmup-epochs", type=float, default=1.0)
     p.add_argument("--ema", type=float, default=0.999, help="0 disables EMA")
     p.add_argument("--clip-grad", type=float, default=1.0)
     p.add_argument("--wd", type=float, default=0.05)
@@ -390,7 +409,12 @@ def main() -> None:
     p.add_argument("--cpu", action="store_true")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--out", type=Path, default=Path("ml/models/checkpoints"))
-    p.add_argument("--patience", type=int, default=5, help="early stop after this many worse val epochs; 0=off")
+    p.add_argument(
+        "--patience",
+        type=int,
+        default=8,
+        help="early stop after this many worse val_acc epochs (counted only after warmup); 0=off",
+    )
     p.add_argument("--workers", type=int, default=-1, help="DataLoader workers; -1 = auto")
     p.add_argument("--expect-drop", action="store_true")
     args = p.parse_args()
