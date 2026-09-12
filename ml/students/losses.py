@@ -19,7 +19,8 @@ def viewfinder_loss(
     l_ce = F.cross_entropy(pred["composition_logits"], label, weight=class_weight)
     total = lambda_box * l_box + lambda_ce * l_ce
     if obj is not None:
-        l_obj = F.binary_cross_entropy(pred["subject_obj"], obj)
+        obj_t = obj.float().reshape_as(pred["subject_obj_logits"])
+        l_obj = F.binary_cross_entropy_with_logits(pred["subject_obj_logits"], obj_t)
         total = total + l_obj
     else:
         l_obj = pred["subject_obj"].new_zeros(())

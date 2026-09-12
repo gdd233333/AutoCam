@@ -108,7 +108,8 @@ def train(args: argparse.Namespace) -> None:
     steps = max(1, args.epochs * len(loader))
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=steps)
     use_amp = device.type == "cuda" and args.amp
-    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+    amp_device = "cuda" if device.type == "cuda" else "cpu"
+    scaler = torch.amp.GradScaler(amp_device, enabled=use_amp)
     accum = max(1, args.accum)
     history: list[float] = []
     model.train()
@@ -121,7 +122,7 @@ def train(args: argparse.Namespace) -> None:
             box = box.to(device, non_blocking=True)
             label = label.to(device, non_blocking=True)
             obj = obj.to(device, non_blocking=True)
-            with torch.cuda.amp.autocast(enabled=use_amp):
+            with torch.amp.autocast(amp_device, enabled=use_amp):
                 pred = model(rgb)
                 stats = viewfinder_loss(pred, box, label, obj, class_weight=class_weight)
                 loss = stats["loss"] / accum

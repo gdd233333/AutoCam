@@ -127,9 +127,15 @@ class ViewfinderNet(nn.Module):
     def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
         feat = self.pool(self.backbone(x)).flatten(1)
         box = torch.sigmoid(self.box(feat))
-        obj = torch.sigmoid(self.obj(feat))
+        obj_logits = self.obj(feat)
+        obj = torch.sigmoid(obj_logits)
         logits = self.cls(feat)
-        return {"subject_box": box, "subject_obj": obj, "composition_logits": logits}
+        return {
+            "subject_box": box,
+            "subject_obj": obj,
+            "subject_obj_logits": obj_logits,
+            "composition_logits": logits,
+        }
 
 
 def count_parameters(model: nn.Module) -> int:
