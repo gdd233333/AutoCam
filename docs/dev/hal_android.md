@@ -89,9 +89,9 @@ Logical **`4` 变焦（dump 真值，第三方必须遵守）**：
 | `com.xiaomi.camera.videosat.zoomRange` | 0.6–15 |
 | `xiaomi.smoothTransition.xiaomiSatMaxZoom` | **120**（系统相机 100x+ SAT） |
 
-第三方 repeating request **只能**写公开 1–10。把 100/120 塞进 `CONTROL_ZOOM_RATIO` 会越界，HAL 可能直接死。系统相机的 100x+ 走厂商 SAT/超分，不是这条 AOSP key。id `4` 与 `0/2/3/8` 冲突，预览只开 PRIV，不要带 JPEG/YUV/OIS/`STREAM_USE_CASE`。
+第三方 repeating request **只能**写公开 1–10。把 100/120 塞进 `CONTROL_ZOOM_RATIO` 会越界，HAL 可能直接死。系统相机的 100x+ 走厂商 SAT/超分，不是这条 AOSP key。id `4` 与 `0/2/3/8` 冲突；第三方 `setRepeatingRequest` 会 `session_error`（已不再杀进程）。
 
-PR-08 建议：优先尝试隐藏 logical **`4`**（三颗物理镜头），失败再退回公开 `0` + `CONTROL_ZOOM_RATIO`。直接开 `2`/`3` 可单独用 UW/Tele。
+**软件 SAT（Cycle cam `4` 或 `hal.multi_lens`）**：不打开硬件 `4`。按用户变焦 0.61–10（相对主摄 23 mm）在物理 `2` / `0` / `3` 之间切，滞回 2 次、freeze+fade 盖住 close/open。切点默认 UW→main `0.95` / main→UW `0.72`，main→tele `4.80` / tele→main `3.60`。每颗镜头的 `CONTROL_ZOOM_RATIO` 从该传感器的 1.0 起算（UW 用户 0.61→请求 1.0，tele 用户 5.22→请求 1.0）。直接开 `2`/`3` 仍可单独用 UW/Tele。
 
 ## PR-08 Profile A 预览（dump 真值）
 
@@ -100,7 +100,7 @@ PR-08 建议：优先尝试隐藏 logical **`4`**（三颗物理镜头），失�
 | 项 | 值 |
 |----|----|
 | 默认 cameraId | 公开 **`0`** |
-| `hal.multi_lens=true` | 隐藏 logical **`4`**（physical 0/2/3） |
+| `hal.multi_lens=true` 或 Cycle cam `4` | **软件 SAT**：物理 `2`/`0`/`3` + freeze-fade，不打开硬件 `4` |
 | Preview PRIVATE | 1920×1080 |
 | Analysis YUV_420_888 | 1920×1080，只 `acquireLatestImage().close()`，不推理 |
 | JPEG（session 占位，拍照 PR-09） | 4080×3072 量级 |

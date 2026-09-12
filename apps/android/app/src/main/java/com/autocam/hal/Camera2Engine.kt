@@ -44,11 +44,19 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class Camera2Engine(
     context: Context,
@@ -85,6 +93,17 @@ class Camera2Engine(
     private var closedSignal: CompletableDeferred<Unit>? = null
     private var hasStreamUseCase = false
     private var logicalCamera = false
+    private var satMode = false
+    private var satUserZoom = 1.0
+    private var lastOpenReq: OpenSessionRequest? = null
+    private var physicalOverride: String? = null
+    private var switchingLens = false
+    private var satAwaitingFirstFrame = false
+    private var queuedLens: String? = null
+    private var satGen = 0
+    private val blender = ZoomBlender()
+    private val engineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val switchMutex = Mutex()
 
     private val frameFlow = MutableSharedFlow<ViewfinderFrame>(replay = 1, extraBufferCapacity = 256)
     private val guideFlow = MutableSharedFlow<CompositionGuide>(replay = 1, extraBufferCapacity = 256)
@@ -104,8 +123,22 @@ class Camera2Engine(
     }
 
     override suspend fun openSession(req: OpenSessionRequest): CameraSession {
+        lastOpenReq = req
+        val wantSat = shouldUseSat(req)
+        val reopening = wantSat && satMode && device != null
+        if (!reopening) satGen += 1
+        satMode = wantSat
         closeSession()
-        val id = pickCameraId(req.facing)
+        if (satMode && !reopening) {
+            blender.reset(ZoomBlender.LENS_MAIN)
+            satUserZoom = 1.0
+            queuedLens = null
+        }
+        val id = when {
+            physicalOverride != null -> physicalOverride.also { physicalOverride = null }!!
+            satMode -> SatZoomMap.cameraId(blender.activeLensId)
+            else -> pickCameraId(req.facing)
+        }
         val ch = manager.getCameraCharacteristics(id)
         val opened = openDevice(id)
         val map = ch.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
@@ -137,13 +170,18 @@ class Camera2Engine(
                 ch.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES)
                     ?.contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_STREAM_USE_CASE) == true
             requestBuilder = RepeatingRequestBuilder(ch, flags.halZoomRatio() && zoomRange != null)
+            val mapped = if (satMode) {
+                SatZoomMap.requestZoom(satUserZoom, blender.activeLensId)
+            } else {
+                1f
+            }
             params = DEFAULT_PARAMS.copy(
-                zoomRatio = 1.0,
+                zoomRatio = mapped.toDouble(),
                 stillSize = listOf(still.width, still.height),
                 stabilization = if (logical) "off" else DEFAULT_PARAMS.stabilization,
             )
-            zoomRatio = 1f
-            session = built
+            zoomRatio = mapped
+            session = if (satMode) satSession(built) else built
             if (!logical) {
                 yuvReader = ImageReader.newInstance(analysis.width, analysis.height, ImageFormat.YUV_420_888, 2).also { reader ->
                     reader.setOnImageAvailableListener({ r ->
@@ -202,6 +240,17 @@ class Camera2Engine(
             emit("params_rejected", "warn", "event.params_rejected")
             return
         }
+        if (satMode) {
+            satUserZoom = params.zoomRatio.coerceIn(SatZoomMap.USER_MIN, SatZoomMap.USER_MAX)
+            val mapped = SatZoomMap.requestZoom(satUserZoom, blender.activeLensId)
+            synchronized(lock) {
+                this.params = params.copy(zoomRatio = mapped.toDouble())
+                zoomRatio = mapped
+            }
+            if (!switchingLens) updateRepeating()
+            onSatZoomChanged()
+            return
+        }
         synchronized(lock) {
             this.params = params
             zoomRatio = params.zoomRatio.toFloat()
@@ -210,13 +259,34 @@ class Camera2Engine(
     }
 
     override fun setZoom(cmd: SetZoom) {
+        if (satMode) {
+            satUserZoom = cmd.zoomRatio.coerceIn(SatZoomMap.USER_MIN, SatZoomMap.USER_MAX)
+            val mapped = SatZoomMap.requestZoom(satUserZoom, blender.activeLensId)
+            synchronized(lock) { zoomRatio = mapped }
+            emit("zoom_cmd_ms", "debug", "event.zoom_cmd_ms")
+            if (!switchingLens) updateRepeating()
+            onSatZoomChanged()
+            return
+        }
         synchronized(lock) { zoomRatio = cmd.zoomRatio.toFloat() }
         emit("zoom_cmd_ms", "debug", "event.zoom_cmd_ms")
         updateRepeating()
     }
 
     override fun setPhysicalLensHint(lensId: String?) {
-        emit("lens_hint_ignored", "info", "event.lens_hint_ignored")
+        if (!satMode || lensId.isNullOrBlank()) {
+            emit("lens_hint_ignored", "info", "event.lens_hint_ignored")
+            return
+        }
+        if (lensId == blender.activeLensId) return
+        val from = blender.activeLensId
+        blender.force(lensId)
+        emit("lens_switch", "info", "event.lens_switch") {
+            put("fromLensId", from)
+            put("toLensId", lensId)
+        }
+        emit("freeze_fade", "info", "event.freeze_fade") { put("phase", "hold") }
+        requestLensSwitch(lensId)
     }
 
     override fun guideUser(cmd: GuideUser) {
@@ -246,10 +316,64 @@ class Camera2Engine(
 
     override fun loadDeviceProfile(json: String) = Unit
 
-    override fun saveZoomCalibration(profile: ZoomBlendProfile) = Unit
+    override fun saveZoomCalibration(profile: ZoomBlendProfile) {
+        blender.profile = profile
+    }
+
+    private fun shouldUseSat(req: OpenSessionRequest): Boolean {
+        if (req.facing == "front") return false
+        val id = flags.debugCameraId()
+        return id == "4" || (id == "auto" && flags.halMultiLens())
+    }
+
+    private fun onSatZoomChanged() {
+        if (switchingLens) {
+            queuedLens = blender.desiredLens(satUserZoom)
+            return
+        }
+        val tick = blender.tick(satUserZoom)
+        if (tick.switched && tick.fromLensId != null) {
+            Log.i(TAG, "sat switch ${tick.fromLensId} -> ${tick.activeLensId} zoom=$satUserZoom")
+            emit("lens_switch", "info", "event.lens_switch") {
+                put("fromLensId", tick.fromLensId)
+                put("toLensId", tick.activeLensId)
+            }
+            emit("freeze_fade", "info", "event.freeze_fade") { put("phase", "hold") }
+            requestLensSwitch(tick.activeLensId)
+        }
+    }
+
+    private fun requestLensSwitch(lensId: String) {
+        queuedLens = lensId
+        val gen = satGen
+        engineScope.launch {
+            if (!switchMutex.tryLock()) return@launch
+            switchingLens = true
+            try {
+                while (true) {
+                    if (satGen != gen || !satMode) break
+                    val target = queuedLens ?: break
+                    queuedLens = null
+                    physicalOverride = SatZoomMap.cameraId(target)
+                    val req = lastOpenReq ?: break
+                    openSession(req)
+                    satAwaitingFirstFrame = true
+                }
+            } catch (t: Throwable) {
+                Log.e(TAG, "sat lens switch failed", t)
+                emit("session_error", "error", "event.session_error")
+            } finally {
+                switchingLens = false
+                switchMutex.unlock()
+            }
+        }
+    }
 
     private fun pickCameraId(facing: String): String {
         val override = flags.debugCameraId()
+        if (override == "4") {
+            return SatZoomMap.cameraId(blender.activeLensId)
+        }
         if (override.isNotBlank() && override != "auto") {
             return override
         }
@@ -258,13 +382,6 @@ class Camera2Engine(
                 manager.getCameraCharacteristics(id).get(CameraCharacteristics.LENS_FACING) ==
                     CameraCharacteristics.LENS_FACING_FRONT
             } ?: "1"
-        }
-        if (flags.halMultiLens()) {
-            runCatching {
-                val ch = manager.getCameraCharacteristics("4")
-                val logical = Build.VERSION.SDK_INT >= 28 && ch.physicalCameraIds.size >= 2
-                if (logical) return "4"
-            }
         }
         return manager.cameraIdList.firstOrNull { id ->
             manager.getCameraCharacteristics(id).get(CameraCharacteristics.LENS_FACING) ==
@@ -367,6 +484,49 @@ class Camera2Engine(
             videoSizes = listOf(listOf(1920, 1080)),
             stabilization = listOf("off", "eis", "ois"),
         )
+    }
+
+    private fun satSession(physical: CameraSession): CameraSession {
+        return physical.copy(
+            logicalCameraId = "4",
+            zoomRatioRange = RangeF(SatZoomMap.USER_MIN, SatZoomMap.USER_MAX),
+            supportsLogicalMultiCamera = true,
+            lenses = satLenses(),
+        )
+    }
+
+    private fun satLenses(): List<SessionLens> {
+        val specs = listOf(
+            Triple("2", ZoomBlender.LENS_UW, "ultrawide"),
+            Triple("0", ZoomBlender.LENS_MAIN, "main"),
+            Triple("3", ZoomBlender.LENS_TELE, "tele"),
+        )
+        return specs.map { (pid, lensId, role) ->
+            val pch = runCatching { manager.getCameraCharacteristics(pid) }.getOrNull()
+            val f = pch?.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.firstOrNull()
+            val a = pch?.get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)?.firstOrNull()
+            val equiv = when (role) {
+                "ultrawide" -> 14.0
+                "tele" -> 120.0
+                else -> 23.0
+            }
+            SessionLens(
+                lensId = lensId,
+                physicalCameraId = pid,
+                role = role,
+                focalMm = f?.toDouble() ?: when (role) {
+                    "ultrawide" -> 2.16
+                    "tele" -> 19.4
+                    else -> 6.68
+                },
+                equiv35mm = equiv,
+                fNumber = a?.toDouble(),
+                opticalZoom = equiv / 23.0,
+                hasOis = pch?.get(CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION)
+                    ?.contains(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_ON) == true,
+                hasAf = true,
+            )
+        }
     }
 
     private fun startSessionLocked(dev: CameraDevice) {
@@ -534,20 +694,32 @@ class Camera2Engine(
 
     private fun emitFrame(result: TotalCaptureResult) {
         val n = previewFrames.incrementAndGet()
-        val z = if (Build.VERSION.SDK_INT >= 30) {
-            result.get(CaptureResult.CONTROL_ZOOM_RATIO) ?: zoomRatio
-        } else {
-            zoomRatio
+        if (satAwaitingFirstFrame) {
+            satAwaitingFirstFrame = false
+            emit("freeze_fade", "info", "event.freeze_fade") { put("phase", "release") }
         }
-        val physical = if (Build.VERSION.SDK_INT >= 29) {
+        val z = if (satMode) {
+            satUserZoom
+        } else if (Build.VERSION.SDK_INT >= 30) {
+            (result.get(CaptureResult.CONTROL_ZOOM_RATIO) ?: zoomRatio).toDouble()
+        } else {
+            zoomRatio.toDouble()
+        }
+        val physical = if (satMode) {
+            cameraId
+        } else if (Build.VERSION.SDK_INT >= 29) {
             result.get(CaptureResult.LOGICAL_MULTI_CAMERA_ACTIVE_PHYSICAL_ID)
         } else {
             null
         }
-        val lensId = when (physical) {
-            "2" -> "physical_ultrawide"
-            "3" -> "physical_tele"
-            else -> "physical_main"
+        val lensId = if (satMode) {
+            blender.activeLensId
+        } else {
+            when (physical) {
+                "2" -> ZoomBlender.LENS_UW
+                "3" -> ZoomBlender.LENS_TELE
+                else -> ZoomBlender.LENS_MAIN
+            }
         }
         val frame = ViewfinderFrame(
             timestampNs = result.get(CaptureResult.SENSOR_TIMESTAMP) ?: System.nanoTime(),
@@ -556,7 +728,7 @@ class Camera2Engine(
             width = previewSize.width,
             height = previewSize.height,
             rotationDeg = 90,
-            zoomRatio = z.toDouble(),
+            zoomRatio = z,
             activePhysicalCamera = physical,
             activeLensId = lensId,
             iso = result.get(CaptureResult.SENSOR_SENSITIVITY),
@@ -616,13 +788,20 @@ class Camera2Engine(
         }
     }
 
-    private fun emit(code: String, level: String, key: String) {
+    private fun emit(
+        code: String,
+        level: String,
+        key: String,
+        data: (kotlinx.serialization.json.JsonObjectBuilder.() -> Unit)? = null,
+    ) {
+        if (code == "session_error" && switchingLens) return
         eventFlow.tryEmit(
             EngineEvent(
                 timestampNs = System.nanoTime(),
                 code = code,
                 level = level,
                 messageKey = key,
+                data = data?.let { buildJsonObject(it) },
             ),
         )
     }

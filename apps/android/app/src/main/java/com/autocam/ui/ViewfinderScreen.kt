@@ -3,6 +3,9 @@ package com.autocam.ui
 import android.graphics.SurfaceTexture
 import android.view.Surface
 import android.view.TextureView
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,7 +26,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -39,7 +46,9 @@ import com.autocam.engine.StillResult
 import com.autocam.hal.Camera2Engine
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.jsonPrimitive
 
 @Composable
 fun ViewfinderScreen(
@@ -64,11 +73,32 @@ fun ViewfinderScreen(
         mutableStateOf(Camera2Engine.DEFAULT_PARAMS)
     }
     var openError by remember { mutableStateOf<String?>(null) }
+    var textureView by remember { mutableStateOf<TextureView?>(null) }
+    var freezeBmp by remember { mutableStateOf<ImageBitmap?>(null) }
+    var freezeHold by remember { mutableStateOf(false) }
+    val freezeAlpha by animateFloatAsState(
+        targetValue = if (freezeHold) 1f else 0f,
+        animationSpec = if (freezeHold) tween(0) else tween(320),
+        finishedListener = { if (!freezeHold) freezeBmp = null },
+        label = "satFreeze",
+    )
 
     LaunchedEffect(engine) {
         engine.events().collect { ev ->
-            if (ev.code == "session_error") {
-                openError = ev.messageKey
+            when (ev.code) {
+                "session_error" -> openError = ev.messageKey
+                "lens_switch", "freeze_fade" -> {
+                    val phase = ev.data?.get("phase")?.jsonPrimitive?.contentOrNull
+                    if (ev.code == "lens_switch" || phase == "hold") {
+                        val bmp = runCatching { textureView?.bitmap }.getOrNull()
+                        if (bmp != null) {
+                            freezeBmp = bmp.asImageBitmap()
+                            freezeHold = true
+                        }
+                    } else if (phase == "release") {
+                        freezeHold = false
+                    }
+                }
             }
         }
     }
@@ -106,6 +136,7 @@ fun ViewfinderScreen(
         AndroidView(
             factory = { context ->
                 TextureView(context).apply {
+                    textureView = this
                     surfaceTextureListener = object : TextureView.SurfaceTextureListener {
                         override fun onSurfaceTextureAvailable(
                             surface: SurfaceTexture,
@@ -135,6 +166,16 @@ fun ViewfinderScreen(
                 .fillMaxSize()
                 .testTag(ViewfinderTags.PREVIEW),
         )
+        freezeBmp?.let { bmp ->
+            Image(
+                bitmap = bmp,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(freezeAlpha),
+            )
+        }
         GuideOverlay(guide = guide, modifier = Modifier.fillMaxSize())
         Column(
             modifier = Modifier
