@@ -73,6 +73,8 @@ PR-05：`flag.ai.guide` 为枚举 `off|rule|neural`（默认 `off`）。`flag.en
 
 PR-06：`shared/core-cpp` + JNI `libautocam`。烟测符号 `autocam::add`；变焦数学仍未实现。
 
+PR-07：真机 `hal_dump.json`。见 [hal_android.md](hal_android.md)。PR-08+ 只消费 dump。
+
 静物 fixtures：`still_object_table`、`still_food`、`still_building`、`still_person`。无像素。
 
 ## 禁止

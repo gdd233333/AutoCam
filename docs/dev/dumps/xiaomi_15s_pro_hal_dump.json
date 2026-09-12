@@ -1,0 +1,1109 @@
+{
+    "dumpedAtIso": "2026-09-12T04:53:20.100179Z",
+    "build": {
+        "model": "25042PN24C",
+        "device": "dijun",
+        "product": "dijun",
+        "hardware": "O1_asic",
+        "manufacturer": "Xiaomi",
+        "brand": "Xiaomi",
+        "sdkInt": 37,
+        "release": "17",
+        "fingerprint": "Xiaomi/dijun/dijun:17/CP2A.260605.016/OS4.0.0.10.XODCNXM:user/release-keys"
+    },
+    "cameras": [
+        {
+            "cameraId": "0",
+            "facing": "back",
+            "hardwareLevel": "FULL",
+            "capabilities": [
+                "BACKWARD_COMPATIBLE",
+                "BURST_CAPTURE",
+                "CONSTRAINED_HIGH_SPEED_VIDEO",
+                "MANUAL_POST_PROCESSING",
+                "MANUAL_SENSOR",
+                "RAW",
+                "READ_SENSOR_SETTINGS",
+                "STREAM_USE_CASE"
+            ],
+            "physicalCameraIds": [],
+            "focalLengthsMm": [
+                6.679999828338623
+            ],
+            "apertures": [
+                1.440000057220459
+            ],
+            "zoomRatioRange": {
+                "min": 1.0,
+                "max": 10.0
+            },
+            "sensorPixelArray": [
+                4096,
+                3072
+            ],
+            "sensorActiveArray": [
+                4096,
+                3072
+            ],
+            "hasControlZoomRatio": true,
+            "hasLogicalMultiCamera": false,
+            "jpegSizes": [
+                [
+                    4096,
+                    3072
+                ],
+                [
+                    4080,
+                    3072
+                ],
+                [
+                    4096,
+                    2304
+                ],
+                [
+                    3072,
+                    3072
+                ],
+                [
+                    4080,
+                    2296
+                ],
+                [
+                    4096,
+                    2160
+                ],
+                [
+                    3840,
+                    2160
+                ],
+                [
+                    3264,
+                    2448
+                ],
+                [
+                    4080,
+                    1836
+                ],
+                [
+                    2880,
+                    2160
+                ],
+                [
+                    3264,
+                    1836
+                ],
+                [
+                    2448,
+                    2448
+                ],
+                [
+                    3200,
+                    1800
+                ],
+                [
+                    3200,
+                    1440
+                ],
+                [
+                    2560,
+                    1440
+                ],
+                [
+                    1920,
+                    1440
+                ],
+                [
+                    2400,
+                    1080
+                ],
+                [
+                    1920,
+                    1080
+                ],
+                [
+                    1600,
+                    1200
+                ],
+                [
+                    1440,
+                    1080
+                ],
+                [
+                    1280,
+                    960
+                ],
+                [
+                    1600,
+                    720
+                ],
+                [
+                    1280,
+                    720
+                ],
+                [
+                    960,
+                    720
+                ],
+                [
+                    800,
+                    600
+                ],
+                [
+                    720,
+                    480
+                ],
+                [
+                    640,
+                    480
+                ],
+                [
+                    352,
+                    288
+                ],
+                [
+                    320,
+                    240
+                ]
+            ],
+            "yuv420888Sizes": [
+                [
+                    4096,
+                    3072
+                ],
+                [
+                    4080,
+                    3072
+                ],
+                [
+                    4096,
+                    2304
+                ],
+                [
+                    3072,
+                    3072
+                ],
+                [
+                    4080,
+                    2296
+                ],
+                [
+                    4096,
+                    2160
+                ],
+                [
+                    3840,
+                    2160
+                ],
+                [
+                    3264,
+                    2448
+                ],
+                [
+                    4080,
+                    1836
+                ],
+                [
+                    2880,
+                    2160
+                ],
+                [
+                    3264,
+                    1836
+                ],
+                [
+                    2448,
+                    2448
+                ],
+                [
+                    3200,
+                    1800
+                ],
+                [
+                    3200,
+                    1440
+                ],
+                [
+                    2560,
+                    1440
+                ],
+                [
+                    1920,
+                    1440
+                ],
+                [
+                    2400,
+                    1080
+                ],
+                [
+                    1920,
+                    1080
+                ],
+                [
+                    1600,
+                    1200
+                ],
+                [
+                    1440,
+                    1080
+                ],
+                [
+                    1280,
+                    960
+                ],
+                [
+                    1600,
+                    720
+                ],
+                [
+                    1280,
+                    720
+                ],
+                [
+                    960,
+                    720
+                ],
+                [
+                    800,
+                    600
+                ],
+                [
+                    720,
+                    480
+                ],
+                [
+                    640,
+                    480
+                ],
+                [
+                    352,
+                    288
+                ],
+                [
+                    320,
+                    240
+                ],
+                [
+                    176,
+                    144
+                ]
+            ],
+            "privateSizes": [
+                [
+                    4096,
+                    3072
+                ],
+                [
+                    4080,
+                    3072
+                ],
+                [
+                    4096,
+                    2304
+                ],
+                [
+                    3072,
+                    3072
+                ],
+                [
+                    4080,
+                    2296
+                ],
+                [
+                    4096,
+                    2160
+                ],
+                [
+                    3840,
+                    2160
+                ],
+                [
+                    3264,
+                    2448
+                ],
+                [
+                    4080,
+                    1836
+                ],
+                [
+                    2880,
+                    2160
+                ],
+                [
+                    3264,
+                    1836
+                ],
+                [
+                    2448,
+                    2448
+                ],
+                [
+                    3200,
+                    1800
+                ],
+                [
+                    3200,
+                    1440
+                ],
+                [
+                    2560,
+                    1440
+                ],
+                [
+                    1920,
+                    1440
+                ],
+                [
+                    2400,
+                    1080
+                ],
+                [
+                    1920,
+                    1080
+                ],
+                [
+                    1600,
+                    1200
+                ],
+                [
+                    1440,
+                    1080
+                ],
+                [
+                    1280,
+                    960
+                ],
+                [
+                    1600,
+                    720
+                ],
+                [
+                    1280,
+                    720
+                ],
+                [
+                    960,
+                    720
+                ],
+                [
+                    800,
+                    600
+                ],
+                [
+                    720,
+                    480
+                ],
+                [
+                    640,
+                    480
+                ],
+                [
+                    352,
+                    288
+                ],
+                [
+                    320,
+                    240
+                ],
+                [
+                    176,
+                    144
+                ]
+            ],
+            "surfaceTextureSizes": [
+                [
+                    4096,
+                    3072
+                ],
+                [
+                    4080,
+                    3072
+                ],
+                [
+                    4096,
+                    2304
+                ],
+                [
+                    3072,
+                    3072
+                ],
+                [
+                    4080,
+                    2296
+                ],
+                [
+                    4096,
+                    2160
+                ],
+                [
+                    3840,
+                    2160
+                ],
+                [
+                    3264,
+                    2448
+                ],
+                [
+                    4080,
+                    1836
+                ],
+                [
+                    2880,
+                    2160
+                ],
+                [
+                    3264,
+                    1836
+                ],
+                [
+                    2448,
+                    2448
+                ],
+                [
+                    3200,
+                    1800
+                ],
+                [
+                    3200,
+                    1440
+                ],
+                [
+                    2560,
+                    1440
+                ],
+                [
+                    1920,
+                    1440
+                ],
+                [
+                    2400,
+                    1080
+                ],
+                [
+                    1920,
+                    1080
+                ],
+                [
+                    1600,
+                    1200
+                ],
+                [
+                    1440,
+                    1080
+                ],
+                [
+                    1280,
+                    960
+                ],
+                [
+                    1600,
+                    720
+                ],
+                [
+                    1280,
+                    720
+                ],
+                [
+                    960,
+                    720
+                ],
+                [
+                    800,
+                    600
+                ],
+                [
+                    720,
+                    480
+                ],
+                [
+                    640,
+                    480
+                ],
+                [
+                    352,
+                    288
+                ],
+                [
+                    320,
+                    240
+                ],
+                [
+                    176,
+                    144
+                ]
+            ]
+        },
+        {
+            "cameraId": "1",
+            "facing": "front",
+            "hardwareLevel": "FULL",
+            "capabilities": [
+                "BACKWARD_COMPATIBLE",
+                "BURST_CAPTURE",
+                "CONSTRAINED_HIGH_SPEED_VIDEO",
+                "MANUAL_POST_PROCESSING",
+                "MANUAL_SENSOR",
+                "RAW",
+                "READ_SENSOR_SETTINGS",
+                "STREAM_USE_CASE"
+            ],
+            "physicalCameraIds": [],
+            "focalLengthsMm": [
+                2.8299999237060547
+            ],
+            "apertures": [
+                2.0
+            ],
+            "zoomRatioRange": {
+                "min": 1.0,
+                "max": 10.0
+            },
+            "sensorPixelArray": [
+                3264,
+                2448
+            ],
+            "sensorActiveArray": [
+                3264,
+                2448
+            ],
+            "hasControlZoomRatio": true,
+            "hasLogicalMultiCamera": false,
+            "jpegSizes": [
+                [
+                    3264,
+                    2448
+                ],
+                [
+                    2880,
+                    2160
+                ],
+                [
+                    3264,
+                    1836
+                ],
+                [
+                    2448,
+                    2448
+                ],
+                [
+                    3200,
+                    1800
+                ],
+                [
+                    3200,
+                    1440
+                ],
+                [
+                    2560,
+                    1440
+                ],
+                [
+                    1920,
+                    1440
+                ],
+                [
+                    2400,
+                    1080
+                ],
+                [
+                    1920,
+                    1080
+                ],
+                [
+                    1600,
+                    1200
+                ],
+                [
+                    1440,
+                    1080
+                ],
+                [
+                    1280,
+                    960
+                ],
+                [
+                    1600,
+                    720
+                ],
+                [
+                    1280,
+                    720
+                ],
+                [
+                    960,
+                    720
+                ],
+                [
+                    800,
+                    600
+                ],
+                [
+                    720,
+                    480
+                ],
+                [
+                    640,
+                    480
+                ],
+                [
+                    352,
+                    288
+                ],
+                [
+                    320,
+                    240
+                ],
+                [
+                    176,
+                    144
+                ]
+            ],
+            "yuv420888Sizes": [
+                [
+                    3264,
+                    2448
+                ],
+                [
+                    2880,
+                    2160
+                ],
+                [
+                    3264,
+                    1836
+                ],
+                [
+                    2448,
+                    2448
+                ],
+                [
+                    3200,
+                    1800
+                ],
+                [
+                    3200,
+                    1440
+                ],
+                [
+                    2560,
+                    1440
+                ],
+                [
+                    1920,
+                    1440
+                ],
+                [
+                    2400,
+                    1080
+                ],
+                [
+                    1920,
+                    1080
+                ],
+                [
+                    1600,
+                    1200
+                ],
+                [
+                    1440,
+                    1080
+                ],
+                [
+                    1280,
+                    960
+                ],
+                [
+                    1600,
+                    720
+                ],
+                [
+                    1280,
+                    720
+                ],
+                [
+                    960,
+                    720
+                ],
+                [
+                    800,
+                    600
+                ],
+                [
+                    720,
+                    480
+                ],
+                [
+                    640,
+                    480
+                ],
+                [
+                    352,
+                    288
+                ],
+                [
+                    320,
+                    240
+                ],
+                [
+                    176,
+                    144
+                ]
+            ],
+            "privateSizes": [
+                [
+                    3264,
+                    2448
+                ],
+                [
+                    2880,
+                    2160
+                ],
+                [
+                    3264,
+                    1836
+                ],
+                [
+                    2448,
+                    2448
+                ],
+                [
+                    3200,
+                    1800
+                ],
+                [
+                    3200,
+                    1440
+                ],
+                [
+                    2560,
+                    1440
+                ],
+                [
+                    1920,
+                    1440
+                ],
+                [
+                    2400,
+                    1080
+                ],
+                [
+                    1920,
+                    1080
+                ],
+                [
+                    1600,
+                    1200
+                ],
+                [
+                    1440,
+                    1080
+                ],
+                [
+                    1280,
+                    960
+                ],
+                [
+                    1600,
+                    720
+                ],
+                [
+                    1280,
+                    720
+                ],
+                [
+                    960,
+                    720
+                ],
+                [
+                    800,
+                    600
+                ],
+                [
+                    720,
+                    480
+                ],
+                [
+                    640,
+                    480
+                ],
+                [
+                    352,
+                    288
+                ],
+                [
+                    320,
+                    240
+                ],
+                [
+                    176,
+                    144
+                ]
+            ],
+            "surfaceTextureSizes": [
+                [
+                    3264,
+                    2448
+                ],
+                [
+                    2880,
+                    2160
+                ],
+                [
+                    3264,
+                    1836
+                ],
+                [
+                    2448,
+                    2448
+                ],
+                [
+                    3200,
+                    1800
+                ],
+                [
+                    3200,
+                    1440
+                ],
+                [
+                    2560,
+                    1440
+                ],
+                [
+                    1920,
+                    1440
+                ],
+                [
+                    2400,
+                    1080
+                ],
+                [
+                    1920,
+                    1080
+                ],
+                [
+                    1600,
+                    1200
+                ],
+                [
+                    1440,
+                    1080
+                ],
+                [
+                    1280,
+                    960
+                ],
+                [
+                    1600,
+                    720
+                ],
+                [
+                    1280,
+                    720
+                ],
+                [
+                    960,
+                    720
+                ],
+                [
+                    800,
+                    600
+                ],
+                [
+                    720,
+                    480
+                ],
+                [
+                    640,
+                    480
+                ],
+                [
+                    352,
+                    288
+                ],
+                [
+                    320,
+                    240
+                ],
+                [
+                    176,
+                    144
+                ]
+            ]
+        }
+    ],
+    "sessionCombos": [
+        {
+            "logicalCameraId": "0",
+            "profile": "A_STILL",
+            "outputs": [
+                {
+                    "format": "PRIVATE",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "preview"
+                },
+                {
+                    "format": "YUV_420_888",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "analysis"
+                },
+                {
+                    "format": "JPEG",
+                    "width": 4080,
+                    "height": 3072,
+                    "physicalCameraId": null,
+                    "role": "still"
+                }
+            ],
+            "supported": true,
+            "queryApi": "CameraDevice.isSessionConfigurationSupported",
+            "error": null
+        },
+        {
+            "logicalCameraId": "0",
+            "profile": "A_STILL_JPEG_MAX",
+            "outputs": [
+                {
+                    "format": "PRIVATE",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "preview"
+                },
+                {
+                    "format": "YUV_420_888",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "analysis"
+                },
+                {
+                    "format": "JPEG",
+                    "width": 4096,
+                    "height": 3072,
+                    "physicalCameraId": null,
+                    "role": "still_max"
+                }
+            ],
+            "supported": true,
+            "queryApi": "CameraDevice.isSessionConfigurationSupported",
+            "error": null
+        },
+        {
+            "logicalCameraId": "0",
+            "profile": "B_VIDEO",
+            "outputs": [
+                {
+                    "format": "PRIVATE",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "preview"
+                },
+                {
+                    "format": "PRIVATE",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "record"
+                },
+                {
+                    "format": "YUV_420_888",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "analysis"
+                }
+            ],
+            "supported": true,
+            "queryApi": "CameraDevice.isSessionConfigurationSupported",
+            "error": null
+        },
+        {
+            "logicalCameraId": "0",
+            "profile": "B_VIDEO_NO_ANALYSIS",
+            "outputs": [
+                {
+                    "format": "PRIVATE",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "preview"
+                },
+                {
+                    "format": "PRIVATE",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "record"
+                }
+            ],
+            "supported": true,
+            "queryApi": "CameraDevice.isSessionConfigurationSupported",
+            "error": null
+        },
+        {
+            "logicalCameraId": "0",
+            "profile": "C_DEGRADED_STILL",
+            "outputs": [
+                {
+                    "format": "PRIVATE",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "preview"
+                },
+                {
+                    "format": "JPEG",
+                    "width": 4080,
+                    "height": 3072,
+                    "physicalCameraId": null,
+                    "role": "still"
+                }
+            ],
+            "supported": true,
+            "queryApi": "CameraDevice.isSessionConfigurationSupported",
+            "error": null
+        },
+        {
+            "logicalCameraId": "0",
+            "profile": "C_DEGRADED_VIDEO",
+            "outputs": [
+                {
+                    "format": "PRIVATE",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "preview"
+                },
+                {
+                    "format": "PRIVATE",
+                    "width": 1920,
+                    "height": 1080,
+                    "physicalCameraId": null,
+                    "role": "record"
+                }
+            ],
+            "supported": true,
+            "queryApi": "CameraDevice.isSessionConfigurationSupported",
+            "error": null
+        }
+    ],
+    "xiaomiCameraEngine": {
+        "sdkOnClasspath": false,
+        "classesTried": [
+            "com.xiaomi.camera.core.CameraEngine",
+            "com.xiaomi.camera.engine.CameraEngine",
+            "com.xiaomi.engine.MiaosaiEngine",
+            "com.xiaomi.camera.algoengine.AlgoEngine",
+            "com.xiaomi.camera.imagecodec.ImageCodec",
+            "miui.camera.CameraEngine"
+        ],
+        "classesPresent": [],
+        "cameraPackages": [
+            "com.android.camera"
+        ],
+        "notes": "No Xiaomi Camera Engine AAR is on AutoCam's classpath. Ship 1 stays Camera2. System package com.android.camera is the OEM app, not a third-party SDK. Runtime Class.forName of documented/guessed engine classes all missed."
+    }
+}

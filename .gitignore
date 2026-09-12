@@ -42,6 +42,8 @@ __pycache__/
 Thumbs.db
 *.swp
 *~
+uidump.xml
+apps/android/uidump.xml
 
 # Secrets
 *.jks

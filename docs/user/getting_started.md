@@ -18,6 +18,10 @@
 
 ## 真机相机
 
-尚未接入。Camera2 枚举从 PR-07 的 HAL dump 开始。在那之前请用 Mock 开发 UI。
+PR-07 起可在 Debug 页 **Dump HAL**（需 USB 调试 + CAMERA 权限）。dump 只枚举镜头和 session 组合，**不会开预览**。
+
+Ship 1 走 Camera2，**没有**小米系统相机的 MFNR / Leica 成片管线，画质会低于 `com.android.camera`。
+
+预览取景仍是下一阶段（PR-08）。当前默认 `engine.mock=true`。
 
 第一船设备：Xiaomi 15S Pro（玄戒 O1 / HyperOS）。

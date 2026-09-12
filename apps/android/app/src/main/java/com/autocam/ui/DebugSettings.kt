@@ -17,8 +17,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -26,7 +28,11 @@ import com.autocam.app.R
 import com.autocam.core.NativeCore
 import com.autocam.flags.AiGuide
 import com.autocam.flags.FeatureFlags
+import com.autocam.hal.HalDumper
 import com.autocam.observability.DebugBundle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun DebugSettings(
@@ -35,7 +41,11 @@ fun DebugSettings(
     onBack: () -> Unit,
 ) {
     val snap by flags.snapshot.collectAsState()
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var exportPath by remember { mutableStateOf<String?>(null) }
+    var dumpPath by remember { mutableStateOf<String?>(null) }
+    var dumpError by remember { mutableStateOf<String?>(null) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -88,6 +98,24 @@ fun DebugSettings(
         FlagSwitch("debug.flag_secure", snap.debugFlagSecure, "flag_debug_flag_secure") {
             flags.setDebugFlagSecure(it)
         }
+        Button(
+            onClick = {
+                dumpError = null
+                scope.launch {
+                    try {
+                        val file = withContext(Dispatchers.IO) {
+                            HalDumper(context.applicationContext).dumpToFile()
+                        }
+                        dumpPath = file.absolutePath
+                    } catch (t: Throwable) {
+                        dumpError = t.message ?: t.javaClass.simpleName
+                    }
+                }
+            },
+            modifier = Modifier.testTag("debug_hal_dump"),
+        ) { Text(stringResource(R.string.debug_hal_dump)) }
+        dumpPath?.let { Text("dump=$it") }
+        dumpError?.let { Text("dump error=$it") }
         if (debugBundle != null) {
             Button(
                 onClick = { exportPath = debugBundle.export().absolutePath },

@@ -14,5 +14,6 @@
     <string name="debug_title">Debug</string>
     <string name="debug_cycle_guide">Cycle ai.guide</string>
     <string name="debug_export">Export debug zip</string>
+    <string name="debug_hal_dump">Dump HAL</string>
     <string name="back">Back</string>
 </resources>
