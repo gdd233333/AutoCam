@@ -6,19 +6,61 @@ from ml.students.spec import CLASS_NAMES
 
 # Longer keys first so "rule of thirds" wins over "thirds".
 FOLD: list[tuple[str, str]] = [
+    ("point_1_rot", "thirds"),
+    ("shape_verti_oneside", "thirds"),
+    ("p_rot", "thirds"),
+    ("s_rot", "thirds"),
+    ("ls_tri", "triangle"),
+    ("special_triangle", "triangle"),
+    ("point_multi_tri", "triangle"),
+    ("p_tri", "triangle"),
+    ("point_shape_cent", "center"),
+    ("shape_verti_mid", "center"),
+    ("p_cent", "center"),
+    ("s_cent", "center"),
+    ("point_multi_dia", "diagonal"),
+    ("ls_dia", "diagonal"),
+    ("p_dia", "diagonal"),
+    ("line_verti_many", "leading_line"),
+    ("line_verti3", "leading_line"),
+    ("line_verti2", "leading_line"),
+    ("l_vermul", "leading_line"),
+    ("l_ver3", "leading_line"),
+    ("l_ver2", "leading_line"),
+    ("point_multi_hori", "leading_line"),
+    ("point_multi_verti", "leading_line"),
+    ("shape_verti_average", "leading_line"),
+    ("ls_hori3", "leading_line"),
+    ("ls_hori2", "leading_line"),
+    ("ls_c_cur", "leading_line"),
+    ("ls_o_cur", "leading_line"),
+    ("ls_s_cur", "leading_line"),
+    ("special_c", "leading_line"),
+    ("special_o", "leading_line"),
+    ("special_s", "leading_line"),
+    ("perspective", "leading_line"),
+    ("s_per", "leading_line"),
+    ("s_hori", "leading_line"),
+    ("p_hori", "leading_line"),
+    ("p_ver", "leading_line"),
+    ("hori3", "leading_line"),
+    ("hori2", "leading_line"),
     ("rule_of_thirds", "thirds"),
     ("rule of thirds", "thirds"),
     ("golden_ratio", "thirds"),
     ("golden ratio", "thirds"),
-    ("p-rot", "thirds"),
-    ("s-rot", "thirds"),
-    ("p-cent", "center"),
-    ("s-cent", "center"),
     ("vanishing_point", "leading_line"),
     ("vanishing point", "leading_line"),
     ("fill_the_frame", "fill_frame"),
     ("fill the frame", "fill_frame"),
-    ("p-dia", "diagonal"),
+    ("pl_den", "fill_frame"),
+    ("dense", "fill_frame"),
+    ("pl_pat", "none"),
+    ("ls_dif", "none"),
+    ("p_scat", "none"),
+    ("scatter", "none"),
+    ("pattern", "none"),
+    ("diffuse", "none"),
     ("center", "center"),
     ("diagonal", "diagonal"),
     ("triangle", "triangle"),
@@ -29,9 +71,6 @@ FOLD: list[tuple[str, str]] = [
     ("curved", "leading_line"),
     ("symmetric", "symmetric"),
     ("fill_frame", "fill_frame"),
-    ("dense", "fill_frame"),
-    ("pattern", "none"),
-    ("scatter", "none"),
     ("thirds", "thirds"),
     ("none", "none"),
 ]
@@ -42,13 +81,15 @@ def _norm(s: str) -> str:
 
 
 def fold_label(raw: str) -> str:
-    key = _norm(raw)
+    # PICD multi-label uses commas; take the first tag.
+    first = raw.split(",")[0].strip() if raw else "none"
+    key = _norm(first)
     for src, dst in FOLD:
         if key == _norm(src):
             return dst
     for src, dst in FOLD:
         nsrc = _norm(src)
-        if nsrc in key:
+        if nsrc and nsrc in key:
             return dst
     return "none"
 

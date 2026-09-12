@@ -74,42 +74,42 @@ def scan_cadb(root: Path) -> list[dict]:
     return rows
 
 
-def scan_picd(root: Path) -> list[dict]:
-    """PICD: {images/, labels.json or annotations.json} with composition field."""
-    rows = []
-    for cand in (root / "labels.json", root / "annotations.json", root / "picd.json"):
-        if not cand.exists():
-            continue
-        payload = json.loads(cand.read_text(encoding="utf-8"))
-        items = payload if isinstance(payload, list) else payload.get("images") or payload.get("items") or []
-        if isinstance(payload, dict) and not items:
-            items = [{"id": k, **v} if isinstance(v, dict) else {"id": k, "label": v} for k, v in payload.items()]
-        for item in items:
-            if not isinstance(item, dict):
-                continue
-            name = item.get("file") or item.get("image") or item.get("id") or item.get("filename")
-            if not name:
-                continue
-            path = Path(name) if Path(name).is_absolute() else root / "images" / Path(name).name
-            if not path.exists():
-                path = root / Path(name).name
-            if not path.exists():
-                continue
-            raw = str(item.get("composition") or item.get("label") or item.get("category") or "none")
-            from ml.datasets.fold import fold_label
+def _picd_find(root: Path, folder: str, name: str) -> Path | None:
+    for base in (root / "single_labels" / folder / name, root / "multi_labels" / folder / name):
+        if base.exists():
+            return base
+    return None
 
-            label = fold_label(raw)
-            rows.append(
-                {
-                    "path": str(path.resolve()),
-                    "source": "picd",
-                    "label": label,
-                    "label_i": CLASS_NAMES.index(label),
-                    "box_xyxy": item.get("bbox") or item.get("box_xyxy"),
-                }
-            )
-        break
-    return rows
+
+def scan_picd(root: Path) -> list[dict]:
+    """Official PICD layout: labels_PICD.csv + single_labels/ + multi_labels/."""
+    from ml.datasets.fold import fold_label
+
+    csv_path = root / "labels_PICD.csv"
+    if csv_path.exists():
+        import csv
+
+        rows = []
+        with csv_path.open(encoding="utf-8") as f:
+            for item in csv.DictReader(f):
+                name = item.get("img_id") or ""
+                folder = item.get("folder_name") or ""
+                path = _picd_find(root, folder, name)
+                if path is None:
+                    continue
+                raw = item.get("category_abbre") or item.get("folder_name") or "none"
+                label = fold_label(raw)
+                rows.append(
+                    {
+                        "path": str(path.resolve()),
+                        "source": "picd",
+                        "label": label,
+                        "label_i": CLASS_NAMES.index(label),
+                        "box_xyxy": None,
+                    }
+                )
+        return rows
+    return []
 
 
 def scan_folder(root: Path, source: str = "folder") -> list[dict]:
