@@ -19,7 +19,8 @@ if str(ROOT) not in sys.path:
 
 from ml.datasets.npz_set import NpzDataset
 from ml.datasets.synthetic import make_batch
-from ml.students.losses import viewfinder_loss
+from ml.students.losses import class_weights_from_counts, viewfinder_loss
+from ml.students.spec import LAMBDA_CE
 from ml.students.viewfinder import ViewfinderNet, count_parameters
 
 
@@ -119,12 +120,24 @@ def _to_device(rgb, box, label, obj, device):
     return rgb, box, label, obj
 
 
+def _hflip_batch(rgb, box):
+    b = rgb.size(0)
+    flip = torch.rand(b, device=rgb.device) < 0.5
+    if not bool(flip.any()):
+        return rgb, box
+    rgb = rgb.clone()
+    box = box.clone()
+    rgb[flip] = rgb[flip].flip(-1)
+    box[flip, 0] = 1.0 - box[flip, 0]
+    return rgb, box
+
+
 def train(args: argparse.Namespace) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() and not args.cpu else "cpu")
     if device.type == "cuda":
         torch.backends.cudnn.benchmark = True
     print(f"device={device} cuda={torch.cuda.is_available()}")
-    model = ViewfinderNet().to(device)
+    model = ViewfinderNet(dropout=args.dropout).to(device)
     if device.type == "cuda":
         model = model.to(memory_format=torch.channels_last)
     print(f"params={count_parameters(model)}")
@@ -167,10 +180,12 @@ def train(args: argparse.Namespace) -> None:
         counts = torch.bincount(torch.from_numpy(train_labels).clamp(0, 7), minlength=8).float()
     else:
         counts = torch.ones(8)
-    class_weight = (counts.sum() / (8.0 * counts.clamp(min=1.0))).to(device)
-    print("class counts", [int(x) for x in counts.tolist()], "weights", [round(float(x), 3) for x in class_weight])
-    print(f"dataloader workers={workers} pin_memory={pin}")
-    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
+    cw = class_weights_from_counts(counts, args.class_weight)
+    class_weight = cw.to(device) if cw is not None else None
+    wprint = [round(float(x), 3) for x in cw.tolist()] if cw is not None else "none"
+    print("class counts", [int(x) for x in counts.tolist()], "weights", wprint)
+    print(f"dataloader workers={workers} pin_memory={pin} lr={args.lr} wd={args.wd} dropout={args.dropout}")
+    opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wd)
     n_train = len(train_idx) + (len(syn) if syn is not None else 0)
     steps_per_epoch = max(1, (n_train + args.batch - 1) // args.batch)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, args.epochs * steps_per_epoch))
@@ -179,10 +194,10 @@ def train(args: argparse.Namespace) -> None:
     scaler = torch.amp.GradScaler(amp_device, enabled=use_amp)
     accum = max(1, args.accum)
     history: list[dict] = []
-    best_val = float("inf")
+    best_acc = -1.0
     bad_epochs = 0
     args.out.mkdir(parents=True, exist_ok=True)
-    print("hint: random 8-class CE≈2.08; keep the epoch with lowest val (healthy ~1.2–2.2). stop if val rises while train falls.")
+    print("hint: majority-class acc may be ~0.4; watch val_acc not weighted val. stop when val_acc stalls.")
     model.train()
     step = 0
     opt.zero_grad(set_to_none=True)
@@ -193,9 +208,20 @@ def train(args: argparse.Namespace) -> None:
         losses = []
         for i, (rgb, box, label, obj) in enumerate(loader):
             rgb, box, label, obj = _to_device(rgb, box, label, obj, device)
+            if args.hflip:
+                rgb, box = _hflip_batch(rgb, box)
             with torch.amp.autocast(amp_device, enabled=use_amp):
                 pred = model(rgb)
-                stats = viewfinder_loss(pred, box, label, obj, class_weight=class_weight)
+                stats = viewfinder_loss(
+                    pred,
+                    box,
+                    label,
+                    obj,
+                    class_weight=class_weight,
+                    lambda_box=args.lambda_box,
+                    lambda_ce=LAMBDA_CE,
+                    label_smoothing=args.label_smoothing,
+                )
                 loss = stats["loss"] / accum
             scaler.scale(loss).backward()
             if (i + 1) % accum == 0:
@@ -217,7 +243,19 @@ def train(args: argparse.Namespace) -> None:
                 for rgb, box, label, obj in val_loader:
                     rgb, box, label, obj = _to_device(rgb, box, label, obj, device)
                     pred = model(rgb)
-                    vlosses.append(float(viewfinder_loss(pred, box, label, obj, class_weight=class_weight)["loss"]))
+                    vlosses.append(
+                        float(
+                            viewfinder_loss(
+                                pred,
+                                box,
+                                label,
+                                obj,
+                                class_weight=None,
+                                lambda_box=args.lambda_box,
+                                lambda_ce=LAMBDA_CE,
+                            )["loss"]
+                        )
+                    )
                     pred_c = pred["composition_logits"].argmax(dim=-1)
                     n_ok += int((pred_c == label).sum().item())
                     n_all += int(label.numel())
@@ -227,11 +265,11 @@ def train(args: argparse.Namespace) -> None:
             row["val"] = vmean
             row["val_acc"] = vacc
             msg += f" val={vmean:.4f} val_acc={vacc:.3f}"
-            if vmean + 1e-4 < best_val:
-                best_val = vmean
+            if vacc > best_acc + 1e-4:
+                best_acc = vacc
                 bad_epochs = 0
                 best_path = args.out / "viewfinder_best.pt"
-                torch.save({"model": model.state_dict(), "history": history + [row], "val": vmean}, best_path)
+                torch.save({"model": model.state_dict(), "history": history + [row], "val": vmean, "val_acc": vacc}, best_path)
                 msg += "  [best]"
             else:
                 bad_epochs += 1
@@ -240,13 +278,13 @@ def train(args: argparse.Namespace) -> None:
         print(msg)
         (args.out / "history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
         if val_loader is not None and args.patience > 0 and bad_epochs >= args.patience:
-            print(f"early stop: val not improving for {args.patience} epochs (best val={best_val:.4f})")
+            print(f"early stop: val_acc not improving for {args.patience} epochs (best acc={best_acc:.3f})")
             break
     ckpt = args.out / "viewfinder_last.pt"
     torch.save({"model": model.state_dict(), "history": history}, ckpt)
     print(f"wrote {ckpt}")
-    if best_val < float("inf"):
-        print(f"use {args.out / 'viewfinder_best.pt'}  (best val={best_val:.4f})")
+    if best_acc >= 0:
+        print(f"use {args.out / 'viewfinder_best.pt'}  (best val_acc={best_acc:.3f})")
     if args.expect_drop and len(history) >= 2 and history[-1]["train"] >= history[0]["train"]:
         raise SystemExit(f"loss did not drop: {history[0]['train']:.4f} -> {history[-1]['train']:.4f}")
 
@@ -260,13 +298,20 @@ def main() -> None:
         default="",
         help="teacher shard folder (ml/teachers/viewfinder) or a single .npz",
     )
-    p.add_argument("--synthetic-n", type=int, default=256)
+    p.add_argument("--synthetic-n", type=int, default=0)
     p.add_argument("--val-frac", type=float, default=0.1)
     p.add_argument("--resume", type=str, default="")
     p.add_argument("--epochs", type=int, default=8)
     p.add_argument("--batch", type=int, default=16)
     p.add_argument("--accum", type=int, default=4, help="grad accum to 64 with batch 16")
-    p.add_argument("--lr", type=float, default=3e-4)
+    p.add_argument("--lr", type=float, default=1e-4)
+    p.add_argument("--wd", type=float, default=0.05)
+    p.add_argument("--dropout", type=float, default=0.3)
+    p.add_argument("--label-smoothing", type=float, default=0.1)
+    p.add_argument("--lambda-box", type=float, default=0.5)
+    p.add_argument("--class-weight", choices=("sqrt", "inv", "none"), default="sqrt")
+    p.add_argument("--hflip", action="store_true", default=True)
+    p.add_argument("--no-hflip", action="store_true")
     p.add_argument("--amp", action="store_true", default=True)
     p.add_argument("--no-amp", action="store_true")
     p.add_argument("--cpu", action="store_true")
@@ -278,6 +323,8 @@ def main() -> None:
     args = p.parse_args()
     if args.no_amp:
         args.amp = False
+    if args.no_hflip:
+        args.hflip = False
     train(args)
 
 

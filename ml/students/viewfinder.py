@@ -103,10 +103,11 @@ def build_backbone() -> nn.Sequential:
 class ViewfinderNet(nn.Module):
     """Outputs NCHW-trained; export path converts to NHWC tflite."""
 
-    def __init__(self) -> None:
+    def __init__(self, dropout: float = 0.3) -> None:
         super().__init__()
         self.backbone = build_backbone()
         self.pool = nn.AdaptiveAvgPool2d(1)
+        self.drop = nn.Dropout(dropout)
         self.box = nn.Linear(FEATURE_CHANNELS, 4)
         self.obj = nn.Linear(FEATURE_CHANNELS, 1)
         self.cls = nn.Linear(FEATURE_CHANNELS, NUM_CLASSES)
@@ -125,7 +126,7 @@ class ViewfinderNet(nn.Module):
                 m.bias.data.zero_()
 
     def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
-        feat = self.pool(self.backbone(x)).flatten(1)
+        feat = self.drop(self.pool(self.backbone(x)).flatten(1))
         box = torch.sigmoid(self.box(feat))
         obj_logits = self.obj(feat)
         obj = torch.sigmoid(obj_logits)
