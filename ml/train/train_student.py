@@ -23,6 +23,23 @@ from ml.students.losses import viewfinder_loss
 from ml.students.viewfinder import ViewfinderNet, count_parameters
 
 
+def resolve_teacher_path(raw: str) -> Path:
+    """Prefer shard directory (ml/teachers/viewfinder/) over a leftover single .npz."""
+    p = Path(raw)
+    shard_dir = p if p.is_dir() else p.with_suffix("")
+    shards = sorted(shard_dir.glob("shard_*.npz")) if shard_dir.is_dir() else []
+    if shards:
+        print(f"teachers: {len(shards)} shards in {shard_dir}")
+        return shard_dir
+    if p.is_file():
+        print(f"teachers: single file {p}")
+        return p
+    raise SystemExit(
+        f"no teacher data at {p}. Run run_teachers.py, then pass the folder "
+        f"(example: --npz ml/teachers/viewfinder) not a missing .npz file."
+    )
+
+
 def _synthetic_uint8(n: int, seed: int) -> TensorDataset:
     data = make_batch(n, np.random.default_rng(seed))
     rgb = torch.from_numpy((np.clip(data["rgb"], 0, 1) * 255).astype(np.uint8))
@@ -122,7 +139,7 @@ def train(args: argparse.Namespace) -> None:
     val_idx: list[int] = []
     label_arr = np.zeros((0,), dtype=np.int64)
     if npz_path:
-        npz = NpzDataset(Path(npz_path))
+        npz = NpzDataset(resolve_teacher_path(npz_path))
         train_idx, val_idx, label_arr = _shard_split(npz, args.val_frac, args.seed)
         print(f"npz n={len(npz)} train={len(train_idx)} val={len(val_idx)}")
     if args.synthetic_n > 0:
@@ -236,8 +253,13 @@ def train(args: argparse.Namespace) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--teachers", type=str, default="", help="teacher npz path (alias of --npz)")
-    p.add_argument("--npz", type=str, default="", help="teacher/dataset npz")
+    p.add_argument("--teachers", type=str, default="", help="alias of --npz")
+    p.add_argument(
+        "--npz",
+        type=str,
+        default="",
+        help="teacher shard folder (ml/teachers/viewfinder) or a single .npz",
+    )
     p.add_argument("--synthetic-n", type=int, default=256)
     p.add_argument("--val-frac", type=float, default=0.1)
     p.add_argument("--resume", type=str, default="")
