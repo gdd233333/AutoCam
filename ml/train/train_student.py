@@ -64,11 +64,46 @@ def train(args: argparse.Namespace) -> None:
     print(f"device={device} cuda={torch.cuda.is_available()}")
     model = ViewfinderNet().to(device)
     print(f"params={count_parameters(model)}")
-    if args.teachers:
-        ds = NpzDataset(Path(args.teachers))
-        loader = DataLoader(ds, batch_size=args.batch, shuffle=True)
+    if args.resume and Path(args.resume).exists():
+        state = torch.load(args.resume, map_location=device, weights_only=True)
+        model.load_state_dict(state["model"] if isinstance(state, dict) and "model" in state else state)
+        print(f"resumed {args.resume}")
+    parts: list[Dataset] = []
+    npz_path = args.teachers or args.npz
+    if npz_path:
+        parts.append(NpzDataset(Path(npz_path)))
+        print(f"npz n={len(parts[-1])}")
+    if args.synthetic_n > 0:
+        data = make_batch(args.synthetic_n, np.random.default_rng(args.seed))
+        parts.append(
+            TensorDataset(
+                torch.from_numpy(data["rgb"]),
+                torch.from_numpy(data["box"]),
+                torch.from_numpy(data["label"]),
+                torch.from_numpy(data["obj"]),
+            )
+        )
+        print(f"synthetic n={args.synthetic_n}")
+    if not parts:
+        raise SystemExit("need --npz/--teachers and/or --synthetic-n > 0")
+    ds: Dataset = torch.utils.data.ConcatDataset(parts) if len(parts) > 1 else parts[0]
+    n_val = int(len(ds) * args.val_frac)
+    if n_val > 0:
+        n_train = len(ds) - n_val
+        train_ds, val_ds = torch.utils.data.random_split(
+            ds, [n_train, n_val], generator=torch.Generator().manual_seed(args.seed)
+        )
     else:
-        loader = synthetic_loader(args.synthetic_n, args.batch, args.seed)
+        train_ds, val_ds = ds, None
+    loader = DataLoader(train_ds, batch_size=args.batch, shuffle=True, drop_last=False)
+    val_loader = DataLoader(val_ds, batch_size=args.batch) if val_ds is not None else None
+    counts = torch.zeros(8)
+    for _, _, label, _ in DataLoader(train_ds, batch_size=256):
+        for v in label.view(-1):
+            if 0 <= int(v) < 8:
+                counts[int(v)] += 1
+    class_weight = (counts.sum() / (8.0 * counts.clamp(min=1.0))).to(device)
+    print("class counts", counts.tolist(), "weights", [round(float(x), 3) for x in class_weight])
     opt = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=0.01)
     steps = max(1, args.epochs * len(loader))
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=steps)
@@ -88,7 +123,7 @@ def train(args: argparse.Namespace) -> None:
             obj = obj.to(device, non_blocking=True)
             with torch.cuda.amp.autocast(enabled=use_amp):
                 pred = model(rgb)
-                stats = viewfinder_loss(pred, box, label, obj)
+                stats = viewfinder_loss(pred, box, label, obj, class_weight=class_weight)
                 loss = stats["loss"] / accum
             scaler.scale(loss).backward()
             if (i + 1) % accum == 0:
@@ -100,7 +135,21 @@ def train(args: argparse.Namespace) -> None:
             losses.append(float(stats["loss"].detach().cpu()))
         mean = float(np.mean(losses)) if losses else 0.0
         history.append(mean)
-        print(f"epoch {epoch+1}/{args.epochs} loss={mean:.4f}")
+        msg = f"epoch {epoch+1}/{args.epochs} loss={mean:.4f}"
+        if val_loader is not None:
+            model.eval()
+            vlosses = []
+            with torch.no_grad():
+                for rgb, box, label, obj in val_loader:
+                    rgb = rgb.to(device)
+                    box = box.to(device)
+                    label = label.to(device)
+                    obj = obj.to(device)
+                    pred = model(rgb)
+                    vlosses.append(float(viewfinder_loss(pred, box, label, obj, class_weight=class_weight)["loss"].cpu()))
+            model.train()
+            msg += f" val={float(np.mean(vlosses)):.4f}"
+        print(msg)
     args.out.mkdir(parents=True, exist_ok=True)
     ckpt = args.out / "viewfinder_last.pt"
     torch.save({"model": model.state_dict(), "history": history}, ckpt)
@@ -112,8 +161,11 @@ def train(args: argparse.Namespace) -> None:
 
 def main() -> None:
     p = argparse.ArgumentParser()
-    p.add_argument("--teachers", type=str, default="", help="teacher npz path")
+    p.add_argument("--teachers", type=str, default="", help="teacher npz path (alias of --npz)")
+    p.add_argument("--npz", type=str, default="", help="teacher/dataset npz")
     p.add_argument("--synthetic-n", type=int, default=256)
+    p.add_argument("--val-frac", type=float, default=0.1)
+    p.add_argument("--resume", type=str, default="")
     p.add_argument("--epochs", type=int, default=8)
     p.add_argument("--batch", type=int, default=16)
     p.add_argument("--accum", type=int, default=4, help="grad accum to 64 with batch 16")

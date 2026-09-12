@@ -1,69 +1,59 @@
 # 取景器学生训练（12 GB / 5070 Ti）
 
-本周额度空窗用这条。不下载 PICD 也能过拟合证明 AMP。教师 `.npz` 有了再蒸馏。
+结构脑图：[model_structure.md](model_structure.md) · [model_structure.html](model_structure.html)
 
 ## 环境
 
 ```powershell
 cd D:\AutoCam
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-# Blackwell 选当前可用的 CUDA wheel，失败再试 cu124
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu128
 pip install -r ml/requirements.txt
+# CLIP 教师（可选，没有则用几何启发式）
+pip install open-clip-torch
+# 或: pip install transformers
 ```
 
-导出双 tflite（可选，要 TensorFlow）：
+本机已有 `torch 2.13+cu130` 可直接训。
 
-```powershell
-pip install -r ml/requirements-export.txt
-python ml/export/random_weight_export_ci.py
-```
+## 一条龙（本周）
 
-## 本周建议日程
-
-1. **冒烟（几分钟）**
+**没有公开集 zip 时** — 合成即可把切分头跑起来：
 
 ```powershell
 python -m pytest ml/tests -q
-python ml/train/overfit_synthetic.py --epochs 5 --batch 16
+python ml/train/overfit_synthetic.py
+python ml/train/train_student.py --synthetic-n 2048 --epochs 40 --batch 16 --accum 4 --amp
 ```
 
-loss 必须下降。有 CUDA 时默认 AMP。
-
-2. **合成多 epoch（几小时）** — 先把切分头跑稳
+**有 CADB 图时：**
 
 ```powershell
-python ml/train/train_student.py --synthetic-n 2048 --epochs 40 --batch 16 --accum 4 --amp --out ml/models/checkpoints
+python ml/datasets/download.py --cadb-ann
+# 把 CADB_Dataset/images 放到 ml/datasets/raw/cadb/images
+python ml/datasets/prepare.py --cadb ml/datasets/raw/cadb
+python ml/teachers/run_teachers.py --use-index-label --device cuda
+python ml/train/train_student.py --npz ml/teachers/viewfinder.npz --synthetic-n 512 --epochs 30 --batch 16 --accum 4 --amp
 ```
 
-batch 16、累积 4 = 有效 64。12 GB 吃紧就 `--batch 8 --accum 8`。
+CADB 图 zip（约 2GB）：Dropbox 链接在 `ml/datasets/manifest.yaml`。PICD 走官方百度/Drive，解压到 `ml/datasets/raw/picd` 后再 `--picd`。
 
-3. **蒸馏（有教师 npz）**
+**自有静物：** 放到 `ml/datasets/raw/folder/`（可用子目录名当 8 类名），`prepare.py --folder`。
 
-把 `ml/teachers/viewfinder.npz` 放到仓库外生成后拷进来（gitignore）。键：`rgb` `box`，以及 `label` 或 `logits`。
+## 教师
+
+| 教师 | 产出 | 何时加载 |
+|------|------|----------|
+| CLIP-ViT-B/32 | 8 类 logits | `run_teachers.py` 无 `--use-index-label` 时 |
+| CADB/PICD 标注 | label_i | `--use-index-label` |
+| v0 显著性 | box + obj | 没有 CADB 元素框时 |
+| U2-Net / YOLO-World | 未接 | 架构允许，不占 12 GB 训练卡 |
+
+训练 GPU **只载学生**。npz 键：`rgb, box, label, obj, logits`。
+
+## 导出
 
 ```powershell
-python ml/train/distill.py --teachers ml/teachers/viewfinder.npz --epochs 30 --batch 16 --accum 4 --amp
-```
-
-4. **导出**（本机装了 tensorflow）
-
-```powershell
+pip install -r ml/requirements-export.txt
 python ml/export/to_tflite.py --out-dir ml/models
 ```
 
-权重不进 git。把 sha256 填进 `ml/models/README.md`。
-
-## 图与损失
-
-- 输入 letterbox 256，pad 114/255，**禁止 stretch**
-- `L = 2.0 * SmoothL1(box) + 1.0 * CE(8 class)`，可选 BCE(obj)
-- 无 mask、无 guide MLP、无 λ_rank（still 头是 PR-21）
-- 骨干 MobileNetV4-Conv-S，ReLU
-
-## 不要做
-
-- 教师和学生同占一张 12 GB 卡
-- 从零训 SAM / CLIP-ViT-L
-- 把 `.tflite` / `.pt` commit 进 git
+权重不进 git。sha256 写 `ml/models/README.md`。

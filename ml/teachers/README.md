@@ -1,7 +1,12 @@
 # 教师预推理（离卡）
 
-训练学生时 GPU **只载学生**。CLIP / U2-Net / YOLO-World 在别的机器或 CPU 上跑完，写成 `viewfinder.npz`。
+```powershell
+python ml/datasets/prepare.py
+python ml/teachers/run_teachers.py --use-index-label --device cuda
+```
 
-取景器学生 **不学 mask**（默认 `λ_kd=0`）。显著性教师只给 v0 对照或可选 still 头。
+- **CLIP-ViT-B/32**：`open-clip-torch` 或 `transformers`；都没有则用主体中心几何启发式。
+- **显著性 box**：`ml/teachers/saliency.py`（center-surround + Sobel），与端侧 v0 同类。CADB `composition_elements` 里像样的框会优先。
+- 取景器学生 **不学 mask**。
 
-生成示例（有 CLIP 时自己接）：letterbox 到 256，box 用同一变换，8 类 logits。键见 `ml/datasets/manifest.yaml`。
+输出：`ml/teachers/viewfinder.npz`（gitignore）。

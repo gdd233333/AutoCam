@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>AutoCam 取景器模型结构脑图</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --ink: #e8eef5;
+      --muted: #8aa0b5;
+      --line: #3d5a73;
+      --c0: #5eead4;
+      --c1: #93c5fd;
+      --c2: #fbbf24;
+      --c3: #f472b6;
+      --c4: #a78bfa;
+      --c5: #86efac;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+    }
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 600;
+      padding: 28px 16px 8px;
+      letter-spacing: 0.04em;
+    }
+    .sub { text-align: center; color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+    .map {
+      position: relative;
+      max-width: 1180px;
+      margin: 0 auto 48px;
+      padding: 24px 20px 40px;
+    }
+    .hub {
+      width: 280px;
+      margin: 0 auto 28px;
+      background: #15202b;
+      border: 2px solid var(--c0);
+      border-radius: 18px;
+      padding: 16px 18px;
+      text-align: center;
+      box-shadow: 0 0 0 6px rgba(94, 234, 212, 0.08);
+    }
+    .hub strong { display: block; font-size: 18px; color: var(--c0); }
+    .hub span { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); line-height: 1.45; }
+    .arms {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    .arm {
+      background: #15202b;
+      border-radius: 14px;
+      padding: 14px 14px 12px;
+      border-top: 3px solid var(--accent, var(--c1));
+    }
+    .arm h2 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      font-weight: 650;
+      color: var(--accent, var(--c1));
+    }
+    .arm ul { margin: 0; padding: 0; list-style: none; }
+    .arm li {
+      font-size: 12.5px;
+      line-height: 1.45;
+      padding: 5px 0 5px 10px;
+      border-left: 2px solid #243140;
+      margin: 4px 0;
+      color: var(--ink);
+    }
+    .arm li em { color: var(--muted); font-style: normal; font-size: 11px; }
+    .a0 { --accent: var(--c1); }
+    .a1 { --accent: var(--c2); }
+    .a2 { --accent: var(--c3); }
+    .a3 { --accent: var(--c4); }
+    .a4 { --accent: var(--c5); }
+    .a5 { --accent: var(--c0); }
+    .spine {
+      margin: 18px auto 0;
+      max-width: 920px;
+      background: #15202b;
+      border-radius: 14px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--c0);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .spine code { color: var(--c0); }
+  </style>
+</head>
+<body>
+  <h1>AutoCam 取景器模型结构脑图</h1>
+  <p class="sub">MNv4-Conv-S 学生 · CLIP / 显著性教师离卡 · 几何只在 C++ guide_from_box</p>
+  <div class="map">
+    <div class="hub">
+      <strong>ViewfinderNet</strong>
+      <span>输入 preview_rgb [1,256,256,3] float 0–1 letterbox pad 114<br/>输出 box[1,4] · obj[1,1] · logits[1,8]<br/>1.27M params · 无 mask · 无 guide MLP</span>
+    </div>
+    <div class="arms">
+      <section class="arm a0">
+        <h2>1. 数据</h2>
+        <ul>
+          <li>synthetic 色块矩形 <em>随时可训</em></li>
+          <li>CADB 9,497 <em>13+none 类 → 8 类</em></li>
+          <li>PICD 36k–49k <em>24 类折叠</em></li>
+          <li>自有静物文件夹</li>
+          <li>prepare.py → index.jsonl</li>
+        </ul>
+      </section>
+      <section class="arm a1">
+        <h2>2. 教师（离卡 npz）</h2>
+        <ul>
+          <li>CLIP-ViT-B/32 <em>8 类 zero-shot</em></li>
+          <li>v0 显著性 box <em>center-surround + Sobel</em></li>
+          <li>CADB 元素框优先</li>
+          <li>U2-Net / YOLO-World 可选未接</li>
+          <li>λ_kd = 0，学生不学 mask</li>
+        </ul>
+      </section>
+      <section class="arm a2">
+        <h2>3. 骨干 MNv4-Conv-S</h2>
+        <ul>
+          <li>stem conv 3×3 s2 → 32</li>
+          <li>conv_bn 堆到 64 / 96</li>
+          <li>UIB ExtraDW / IB / ConvNeXt-style</li>
+          <li>全程 ReLU，禁止 PReLU / attention</li>
+          <li>末层 1×1 → 960 · GAP</li>
+        </ul>
+      </section>
+      <section class="arm a3">
+        <h2>4. 三个头</h2>
+        <ul>
+          <li>box FC 960→4 sigmoid cxcywh</li>
+          <li>obj FC 960→1 sigmoid</li>
+          <li>cls FC 960→8 原始 logits</li>
+          <li>8 类：thirds center diagonal triangle leading_line symmetric fill_frame none</li>
+        </ul>
+      </section>
+      <section class="arm a4">
+        <h2>5. 损失与训练</h2>
+        <ul>
+          <li>L = 2.0 SmoothL1(box) + 1.0 wCE(cls)</li>
+          <li>可选 BCE(obj)</li>
+          <li>AdamW 3e-4 cosine · AMP</li>
+          <li>batch 16 累积 4 = 64 · 12 GB</li>
+          <li>教师与学生不同时占卡</li>
+        </ul>
+      </section>
+      <section class="arm a5">
+        <h2>6. 导出 / 端侧</h2>
+        <ul>
+          <li>FP16 tflite → LiteRT GPU</li>
+          <li>INT8 tflite float I/O → XNNPACK</li>
+          <li>opcode 白名单 CONV/DW/ADD/RELU/FC/MEAN…</li>
+          <li>InferenceRuntime 未接取景器</li>
+          <li>neural 失败必须回 rule</li>
+        </ul>
+      </section>
+    </div>
+    <p class="spine">
+      数据流：<code>YUV/JPEG → letterbox 256 → 教师 npz 或合成 → ViewfinderNet → box+class → C++ guide_from_box → 引导叠层</code>
+    </p>
+  </div>
+</body>
+</html>

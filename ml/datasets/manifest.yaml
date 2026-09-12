@@ -1,21 +1,41 @@
-# Do not download in PR-17. Place files under ml/datasets/raw/ when distilling.
+# Images are not in git. Annotations can be fetched; zips are manual.
 datasets:
-  picd:
-    name: PICD
-    note: Fold labels with fold_picd_to_8.py before training.
-    local: ml/datasets/raw/picd
-  cadb:
-    name: CADB
-    local: ml/datasets/raw/cadb
   synthetic:
     name: colored rectangle overfit
     script: ml/datasets/synthetic.py
+    local: in-memory
+  cadb:
+    name: CADB (BMVC 2021)
+    images_n: 9497
+    images_zip: "https://www.dropbox.com/scl/fi/fvlsnit7on6218szply4q/CADB_Dataset.zip?rlkey=mwt9eftdhmnawomv44x4deliw&dl=1"
+    annotations: github.com/bcmi/Image-Composition-Assessment-Dataset-CADB
+    local: ml/datasets/raw/cadb
+    fetch: python ml/datasets/download.py --cadb-ann
+  picd:
+    name: PICD (CVPR 2025)
+    images_n: "36857–49123"
+    page: https://github.com/CV-xueba/PICD_ImageComposition
+    note: Baidu/Drive; fold 24 classes with fold.py
+    local: ml/datasets/raw/picd
+  folder:
+    name: user stills
+    local: ml/datasets/raw/folder
 teachers:
+  clip: CLIP-ViT-B/32 zero-shot 8-class (open_clip or transformers; else geometry heuristic)
+  saliency: v0 center-surround+Sobel box (U2-Net optional later)
+  yolo_world: not wired; optional detector for box
   format: npz
   keys:
     rgb: "float32 NCHW [N,3,256,256] or NHWC [N,256,256,3] in 0-1"
     box: "float32 [N,4] cx,cy,w,h relative to letterbox 256"
-    label: "int64 [N] 0-7 optional if logits present"
-    logits: "float32 [N,8] optional"
-    obj: "float32 [N,1] optional, default 1"
+    label: "int64 [N] 0-7"
+    logits: "float32 [N,8]"
+    obj: "float32 [N,1]"
   path: ml/teachers/viewfinder.npz
+pipeline:
+  - python ml/datasets/download.py --cadb-ann
+  - "# unzip CADB images into ml/datasets/raw/cadb/images"
+  - python ml/datasets/prepare.py
+  - python ml/teachers/run_teachers.py --use-index-label
+  - python ml/train/train_student.py --npz ml/teachers/viewfinder.npz --synthetic-n 512 --epochs 30 --amp
+
